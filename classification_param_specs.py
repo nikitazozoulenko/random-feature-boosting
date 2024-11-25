@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor, tensor
 
-from models import LogisticRegression, GradientRandomFeatureBoostingClassification, XGBoostClassifierWrapper
+from models.models import LogisticRegression, GradientRandomFeatureBoostingClassification, XGBoostClassifierWrapper
 from optuna_kfoldCV import evaluate_pytorch_model_kfoldcv
 
 

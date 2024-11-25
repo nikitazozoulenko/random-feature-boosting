@@ -9,9 +9,10 @@ import torch.nn.functional as F
 import torch.optim
 import torch.utils.data
 from torch import Tensor
-from sklearn.linear_model import RidgeCV, RidgeClassifierCV
+from sklearn.linear_model import RidgeClassifierCV
+import xgboost as xgb
 
-from ridge_ALOOCV import fit_ridge_ALOOCV
+from models.ridge_ALOOCV import fit_ridge_ALOOCV
 
 
 ############################################################################
@@ -666,7 +667,7 @@ class E2EResNet(FittableModule):
 ###################################################
 ### Greedy Boosting special case for regression ###
 ###################################################
-from ridge_ALOOCV import fit_ridge_ALOOCV
+from models.ridge_ALOOCV import fit_ridge_ALOOCV
 
 class StagewiseRandFeatBoostRegression(FittableModule):
     def __init__(self, 
@@ -1025,7 +1026,6 @@ class GradientRandomFeatureBoostingClassification(FittableModule):
 ###### XGBoost Wrappers ##############
 ######################################
 
-import xgboost as xgb
 
 class XGBoostRegressorWrapper(FittableModule):
     def __init__(self, 
@@ -1051,8 +1051,6 @@ class XGBoostRegressorWrapper(FittableModule):
             y_pred_np = y_pred_np[:, None]
         return torch.tensor(y_pred_np, dtype=X.dtype, device=X.device)
     
-
-from utils.utils import print_shape
 
 class XGBoostClassifierWrapper(FittableModule):
     def __init__(self, 
