@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor, tensor
 
-from models import RidgeCVModule, RidgeModule, GradientRandFeatBoostRegression, XGBoostRegressorWrapper
+from models.models import RidgeCVModule, RidgeModule, GradientRandFeatBoostRegression, XGBoostRegressorWrapper
 from optuna_kfoldCV import evaluate_pytorch_model_kfoldcv
 
 
