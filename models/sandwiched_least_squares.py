@@ -65,8 +65,8 @@ def sandwiched_LS_dense(
         l2_reg: float = 0.01,
         ):
     """Solves the sandwiched least squares problem for dense matrices Delta:
-    Delta = argmin_{Delta} sum_i ||R_i - W' Delta X_i||^2 + lambda_reg ||Delta||_F^2
-          = argmin_{Delta}       ||X Delta' W - R||_F^2 + lambda_reg ||Delta||^2
+    Delta = argmin_{Delta} sum_i ||R_i - W' Delta' X_i||^2 + lambda_reg ||Delta||_F^2
+          = argmin_{Delta}       ||X Delta W - R||_F^2 + lambda_reg ||Delta||^2
 
     Args:
         R (Tensor): Shape (N, d)
@@ -75,11 +75,11 @@ def sandwiched_LS_dense(
         l2_reg (float): L2 regularization parameter.
     
     Returns:
-        Delta (Tensor): Shape (D, p)
+        Delta (Tensor): Shape (p, D)
     """
     N = X.shape[0]
     SW, U = torch.linalg.eigh(W @ W.T)
     SX, V = torch.linalg.eigh(X.T @ X / N)
     Delta = (U.T @ W @ R.T @ (X/N) @ V) / (l2_reg + SW[:, None]*SX[None, :])
     Delta = U @ Delta @ V.T
-    return Delta
+    return Delta.T
