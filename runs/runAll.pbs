@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Loop over the numbers from 1 to 9
+for i in {1..9}
+do
+  # Check if a file with the prefix "ts" followed by the number exists and ends with ".pbs"
+  for file in ts${i}*.pbs
+  do
+    if [ -e "$file" ]
+    then
+      # If it does, run the command "qsub" with that file
+      qsub "$file"
+    fi
+  done
+done
