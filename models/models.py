@@ -13,6 +13,8 @@ from sklearn.linear_model import RidgeClassifierCV
 import xgboost as xgb
 
 from models.ridge_ALOOCV import fit_ridge_ALOOCV
+from models.sandwiched_least_squares import sandwiched_LS_dense, sandwiched_LS_diag, sandwiched_LS_scalar
+
 
 
 ############################################################################
@@ -667,9 +669,9 @@ class E2EResNet(FittableModule):
 ###################################################
 ### Greedy Boosting special case for regression ###
 ###################################################
-from models.ridge_ALOOCV import fit_ridge_ALOOCV
 
-class StagewiseRandFeatBoostRegression(FittableModule):
+
+class GreedyRandFeatBoostRegression(FittableModule):
     def __init__(self, 
                  hidden_dim: int = 128, #TODO
                  bottleneck_dim: int = 128,
@@ -680,8 +682,10 @@ class StagewiseRandFeatBoostRegression(FittableModule):
                  feature_type = "SWIM", # "dense", identity
                  boost_lr: float = 1.0,
                  upscale: Optional[str] = "dense",
+                 sandwich_solver : Literal["scalar", "diag", "dense"] = "dense"
+                 #TODO add argument which specifies f(x_t) vs f(x_t, x_0)
                  ):
-        super(StagewiseRandFeatBoostRegression, self).__init__()
+        super(GreedyRandFeatBoostRegression, self).__init__()
         self.hidden_dim = hidden_dim
         self.bottleneck_dim = bottleneck_dim
         self.out_dim = out_dim
@@ -692,10 +696,18 @@ class StagewiseRandFeatBoostRegression(FittableModule):
         self.boost_lr = boost_lr
         self.upscale = upscale
 
-        # save for now. for more memory efficient implementation, we can remove a lot of this
-        self.W = []
-        self.b = []
-        self.alphas = []
+        if sandwich_solver == "dense":
+            self.sandwich_solver = sandwiched_LS_dense
+            self.XDelta_op = self.XDelta_dense
+        elif sandwich_solver == "diag":
+            self.sandwich_solver = sandwiched_LS_diag
+            self.XDelta_op = self.XDelta_diag
+        elif sandwich_solver == "scalar":
+            self.sandwich_solver = sandwiched_LS_scalar
+            self.XDelta_op = self.XDelta_scalar
+
+        self.W = None
+        self.b = None
         self.layers = []
         self.deltas = []
 
@@ -711,52 +723,49 @@ class StagewiseRandFeatBoostRegression(FittableModule):
                 X = self.upscale.fit_transform(X, y)
 
             # Create regressor W_0
-            W, b, alpha = fit_ridge_ALOOCV(X, y)
-            self.W.append(W)
-            self.b.append(b)
-            self.alphas.append(alpha)
+            self.W, self.b, alpha = fit_ridge_ALOOCV(X, y)
 
             # Layerwise boosting
-            N = X.size(0)
             for t in range(self.n_layers):
                 # Step 1: Create random feature layer   
                 layer = create_layer(self.feature_type, self.hidden_dim, self.bottleneck_dim, self.activation)
                 F = layer.fit_transform(X, y)
-
-                # Step 2: Obtain activation gradient and learn Delta
-                # X shape (N, D) --- ResNet neurons
-                # F shape (N, p) --- random features
-                # y shape (N, d) --- target
-                # r shape (N, D) --- residual at currect boosting iteration
-                # W shape (D, d) --- top level classifier
-                r = y - X @ W - b   # G = (y - X @ W - b) @ W.T
-                SW, U = torch.linalg.eigh(W @ W.T)
-                SF, V = torch.linalg.eigh(F.T @ F)
-                Delta = (U.T @ W @ r.T @ F @ V) / (N*self.l2_reg + SW[:, None]*SF[None, :])
-                Delta = (U @ Delta @ V.T).T
-                #TODO de-center F and r, and include an intercept. How to do this for my special equation?
-
-                # Step 3: Learn top level classifier
-                X = X + self.boost_lr * F @ Delta
-                W, b, alpha = fit_ridge_ALOOCV(X, y)
-
-                # store
                 self.layers.append(layer)
+
+                # Step 2: Greedily minimize R(W_t, Phi_t + Delta F)
+                R = y - X @ self.W - self.b # residual
+                Delta = self.sandwich_solver(R, self.W, F, self.l2_reg)
                 self.deltas.append(Delta)
-                self.W.append(W)
-                self.b.append(b)
-                self.alphas.append(alpha)
 
-            return X @ W + b, y
+                # Step 3: Learn top level classifier W_t
+                X = X + self.boost_lr * self.XDelta_op(F, Delta)
+                self.W, self.b, alpha = fit_ridge_ALOOCV(X, y)
 
+            return X @ self.W + self.b, y
+
+    @staticmethod
+    def XDelta_scalar(X: Tensor, Delta: Tensor) -> Tensor:
+        return X * Delta
+    
+    @staticmethod
+    def XDelta_diag(X: Tensor, Delta: Tensor) -> Tensor:
+        return X * Delta[None, :]
+    
+    @staticmethod
+    def XDelta_dense(X: Tensor, Delta: Tensor) -> Tensor:
+        return X @ Delta
 
     def forward(self, X: Tensor) -> Tensor:
         with torch.no_grad():
+            #upscale
             if self.upscale is not None:
                 X = self.upscale(X)
+            # Boosting
             for layer, Delta in zip(self.layers, self.deltas):
-                X = X + self.boost_lr * layer(X) @ Delta
-            return X @ self.W[-1] + self.b[-1]
+                X = X + self.boost_lr * self.XDelta_op(layer(X), Delta)
+            # Top level regressor
+            return X @ self.W + self.b
+
         
 
 
@@ -764,12 +773,12 @@ class StagewiseRandFeatBoostRegression(FittableModule):
 
 class GradientRandFeatBoostRegression(FittableModule):
     def __init__(self, 
-                 hidden_dim: int = 128, #TODO
+                 hidden_dim: int = 128,
                  bottleneck_dim: int = 128,
                  out_dim: int = 1,
                  n_layers: int = 5,
                  activation: nn.Module = nn.Tanh(),
-                 l2_reg: float = 0.01,
+                #  l2_reg: float = 0.01,   #TODO ALOOCV or fixed l2_reg
                  feature_type = "SWIM", # "dense", identity
                  boost_lr: float = 1.0,
                  upscale: Optional[str] = "dense",
@@ -780,15 +789,14 @@ class GradientRandFeatBoostRegression(FittableModule):
         self.out_dim = out_dim
         self.n_layers = n_layers
         self.activation = activation
-        self.l2_reg = l2_reg
+        # self.l2_reg = l2_reg
         self.feature_type = feature_type
         self.boost_lr = boost_lr
         self.upscale = upscale
 
         # save for now. for more memory efficient implementation, we can remove a lot of this
-        self.W = []
-        self.b = []
-        self.alphas = []
+        self.W = None
+        self.b = None
         self.layers = []
         self.deltas = []
 
@@ -804,10 +812,7 @@ class GradientRandFeatBoostRegression(FittableModule):
                 X = self.upscale.fit_transform(X, y)
 
             # Create regressor W_0
-            W, b, alpha = fit_ridge_ALOOCV(X, y)
-            self.W.append(W)
-            self.b.append(b)
-            self.alphas.append(alpha)
+            self.W, self.b, _ = fit_ridge_ALOOCV(X, y)
 
             # Layerwise boosting
             N = X.size(0)
@@ -822,23 +827,22 @@ class GradientRandFeatBoostRegression(FittableModule):
                 # y shape (N, d) --- target
                 # W shape (D, d) --- top level classifier
                 # G shape (N, D) --- gradient of neurons
-                # r shape (N, D) --- residual at currect boosting iteration
-                r = y - X @ W - b
-                G = r @ W.T
+                # r shape (N, d) --- residual at currect boosting iteration
+
+                r = y - X @ self.W - self.b
+                G = r @ self.W.T
                 
                 # fit to negative gradient (finding functional direction)
                 Delta, Delta_b, _ = fit_ridge_ALOOCV(F, G)
+                Ghat = F @ Delta + Delta_b
 
                 # Line search closed form risk minimization of R(W_t, Phi_{t+1})
-                Ghat = F @ Delta + Delta_b
-                XW = Ghat @ W
-                numerator = torch.sum( r * XW / N )
-                denominator = torch.sum(XW*XW/N)
-                linesearch = numerator / (denominator + 0.01)
+                linesearch = sandwiched_LS_scalar(r, self.W, Ghat, 0.01)
+
 
                 # Step 3: Learn top level classifier
                 X = X + self.boost_lr * linesearch * Ghat
-                W, b, alpha = fit_ridge_ALOOCV(X, y)
+                self.W, self.b, alpha = fit_ridge_ALOOCV(X, y)
 
                 #update Delta scale
                 Delta = Delta * linesearch
@@ -847,11 +851,8 @@ class GradientRandFeatBoostRegression(FittableModule):
                 # store
                 self.layers.append(layer)
                 self.deltas.append((Delta, Delta_b))
-                self.W.append(W)
-                self.b.append(b)
-                self.alphas.append(alpha)
 
-            return X @ W + b, y
+            return X @ self.W + self.b, y
 
 
     def forward(self, X: Tensor) -> Tensor:
@@ -860,7 +861,7 @@ class GradientRandFeatBoostRegression(FittableModule):
                 X = self.upscale(X)
             for layer, (Delta, Delta_b) in zip(self.layers, self.deltas):
                 X = X + self.boost_lr * (layer(X) @ Delta + Delta_b)
-            return X @ self.W[-1] + self.b[-1]
+            return X @ self.W + self.b
         
 
 
