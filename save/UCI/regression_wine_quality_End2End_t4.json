@@ -1,0 +1,67 @@
+{
+    "wine_quality": {
+        "End2End_t4": {
+            "score_train": [
+                0.7535251379013062,
+                0.7317900061607361,
+                0.7034482955932617
+            ],
+            "score_test": [
+                0.7772607803344727,
+                0.7896222472190857,
+                0.8278732299804688
+            ],
+            "t_fit": [
+                0.5745839860028354,
+                0.931176628000685,
+                1.1574710459972266
+            ],
+            "t_inference": [
+                0.0028165149997221306,
+                0.0028124380041845143,
+                0.0030252730066422373
+            ],
+            "hyperparams": [
+                {
+                    "in_dim": 12,
+                    "out_dim": 2,
+                    "n_blocks": 4,
+                    "loss": "mse",
+                    "hidden_dim": 66,
+                    "bottleneck_dim": 56,
+                    "lr": 0.008125118008655369,
+                    "end_lr_factor": 0.0505954679716219,
+                    "n_epochs": 10,
+                    "weight_decay": 0.0004316491750324239,
+                    "batch_size": 512
+                },
+                {
+                    "in_dim": 12,
+                    "out_dim": 2,
+                    "n_blocks": 4,
+                    "loss": "mse",
+                    "hidden_dim": 80,
+                    "bottleneck_dim": 52,
+                    "lr": 0.0059603585143950385,
+                    "end_lr_factor": 0.021208674697046414,
+                    "n_epochs": 7,
+                    "weight_decay": 5.156282792504814e-05,
+                    "batch_size": 128
+                },
+                {
+                    "in_dim": 12,
+                    "out_dim": 2,
+                    "n_blocks": 4,
+                    "loss": "mse",
+                    "hidden_dim": 97,
+                    "bottleneck_dim": 74,
+                    "lr": 0.007861163565432216,
+                    "end_lr_factor": 0.024029480734318938,
+                    "n_epochs": 14,
+                    "weight_decay": 0.0020392408240656294,
+                    "batch_size": 256
+                }
+            ]
+        }
+    }
+}
