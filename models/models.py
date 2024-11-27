@@ -682,8 +682,8 @@ class End2EndMLPResNet(FittableModule):
 
 class GreedyRandFeatBoostRegression(FittableModule):
     def __init__(self, 
-                 hidden_dim: int = 128, #TODO
-                 bottleneck_dim: int = 128,
+                 hidden_dim: int = 128,
+                 bottleneck_dim: Optional[int] = 32, #if None, use hidden_dim
                  out_dim: int = 1,
                  n_layers: int = 5,
                  activation: nn.Module = nn.Tanh(),
@@ -695,8 +695,10 @@ class GreedyRandFeatBoostRegression(FittableModule):
                  #TODO add argument which specifies f(x_t) vs f(x_t, x_0)
                  ):
         super(GreedyRandFeatBoostRegression, self).__init__()
+        if bottleneck_dim is None:
+            bottleneck_dim = hidden_dim
+            
         self.hidden_dim = hidden_dim
-        self.bottleneck_dim = bottleneck_dim
         self.out_dim = out_dim
         self.n_layers = n_layers
         self.activation = activation
@@ -711,9 +713,12 @@ class GreedyRandFeatBoostRegression(FittableModule):
         elif sandwich_solver == "diag":
             self.sandwich_solver = sandwiched_LS_diag
             self.XDelta_op = self.XDelta_diag
+            self.bottleneck_dim = hidden_dim
         elif sandwich_solver == "scalar":
             self.sandwich_solver = sandwiched_LS_scalar
             self.XDelta_op = self.XDelta_scalar
+            self.bottleneck_dim = hidden_dim
+        
 
         self.W = None
         self.b = None

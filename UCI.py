@@ -163,6 +163,7 @@ def get_GreedyRFBoost_eval_fun(
             n_optuna_trials: int,
             device: Literal["cpu", "cuda"],
             ):
+        
         ModelClass = GreedyRandFeatBoostRegression
         get_optuna_params = lambda trial : {
             "out_dim": trial.suggest_categorical("out_dim", [y.size(1)]),  # Fixed value
@@ -172,7 +173,7 @@ def get_GreedyRFBoost_eval_fun(
             "upscale": trial.suggest_categorical("upscale", [upscale]), # Fixed value
 
             "hidden_dim": trial.suggest_int("hidden_dim", 16, 128, log=True),
-            "bottleneck_dim": trial.suggest_int("bottleneck_dim", 16, 128, log=True),
+            "bottleneck_dim": trial.suggest_int("bottleneck_dim", 16, 128, log=True) if sandwich_solver=="dense" else None,
             "l2_reg": trial.suggest_float("l2_reg", 1e-6, 0.1, log=True),
             "boost_lr": trial.suggest_float("boost_lr", 0.1, 1.0, log=True),
         }
@@ -348,8 +349,12 @@ if __name__ == "__main__":
                 get_eval_fun = lambda t : get_End2End_eval_fun(t)
             elif model_name == "Ridge":
                 get_eval_fun = lambda t : get_Ridge_eval_fun(t)
-            elif model_name == "GradientRFBoost":
+            elif model_name == "GradientRFBoost": #TODO change name to Dense
                 get_eval_fun = lambda t : get_GradientRFBoost_eval_fun(t)
+            elif model_name == "GreedyRFBoostDiag":
+                get_eval_fun = lambda t : get_GreedyRFBoost_eval_fun(t, sandwich_solver="diag")
+            elif model_name == "GreedyRFBoostScalar":
+                get_eval_fun = lambda t : get_GreedyRFBoost_eval_fun(t, sandwich_solver="scalar")
             elif model_name == "GreedyRFBoost":
                 get_eval_fun = lambda t : get_GreedyRFBoost_eval_fun(t)
             elif model_name == "RandomFeatureResNet":
