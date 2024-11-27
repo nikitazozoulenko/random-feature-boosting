@@ -1,0 +1,55 @@
+{
+    "forestfire": {
+        "GradientRFBoost_t11": {
+            "score_train": [
+                0.9645166993141174,
+                0.9802812337875366,
+                0.9800982475280762
+            ],
+            "score_test": [
+                1.02500581741333,
+                1.0498154163360596,
+                0.9845107197761536
+            ],
+            "t_fit": [
+                0.0421137160010403,
+                0.03701049600203987,
+                0.05964955699892016
+            ],
+            "t_inference": [
+                0.002651098999194801,
+                0.00239890699958778,
+                0.002721625001868233
+            ],
+            "hyperparams": [
+                {
+                    "out_dim": 1,
+                    "n_layers": 11,
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "hidden_dim": 17,
+                    "bottleneck_dim": 54,
+                    "boost_lr": 0.5938112819394502
+                },
+                {
+                    "out_dim": 1,
+                    "n_layers": 11,
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "hidden_dim": 22,
+                    "bottleneck_dim": 25,
+                    "boost_lr": 0.767226195227603
+                },
+                {
+                    "out_dim": 1,
+                    "n_layers": 11,
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "hidden_dim": 24,
+                    "bottleneck_dim": 46,
+                    "boost_lr": 0.11507062820224925
+                }
+            ]
+        }
+    }
+}

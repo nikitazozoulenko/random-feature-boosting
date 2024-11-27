@@ -1,0 +1,55 @@
+{
+    "forestfire": {
+        "XGBoostRegressor_t1": {
+            "score_train": [
+                0.9134134650230408,
+                0.8785345554351807,
+                0.9429075121879578
+            ],
+            "score_test": [
+                1.0193506479263306,
+                0.9832754731178284,
+                0.979677677154541
+            ],
+            "t_fit": [
+                0.01962691600783728,
+                0.028250185991055332,
+                0.017556065009557642
+            ],
+            "t_inference": [
+                0.0018323870026506484,
+                0.0012978980084881186,
+                0.0018722989916568622
+            ],
+            "hyperparams": [
+                {
+                    "objective": "reg:squarederror",
+                    "lambda": 0.001650051364698031,
+                    "learning_rate": 0.010129708415367216,
+                    "n_estimators": 53,
+                    "max_depth": 4,
+                    "subsample": 0.8289848828938953,
+                    "colsample_bytree": 0.5346615982489438
+                },
+                {
+                    "objective": "reg:squarederror",
+                    "lambda": 9.54297108301101,
+                    "learning_rate": 0.01332598215920533,
+                    "n_estimators": 71,
+                    "max_depth": 6,
+                    "subsample": 0.7464653228590497,
+                    "colsample_bytree": 0.6572598364392886
+                },
+                {
+                    "objective": "reg:squarederror",
+                    "lambda": 1.074998888788081,
+                    "learning_rate": 0.010830898233736825,
+                    "n_estimators": 80,
+                    "max_depth": 3,
+                    "subsample": 0.8605748887067882,
+                    "colsample_bytree": 0.5315258666212263
+                }
+            ]
+        }
+    }
+}

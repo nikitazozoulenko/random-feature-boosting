@@ -1,0 +1,55 @@
+{
+    "wine_quality": {
+        "XGBoostRegressor_t1": {
+            "score_train": [
+                0.6228540539741516,
+                0.5874924063682556,
+                0.5436801910400391
+            ],
+            "score_test": [
+                0.7643817663192749,
+                0.768220841884613,
+                0.8104761242866516
+            ],
+            "t_fit": [
+                0.3919997519988101,
+                0.2955259250011295,
+                0.3427689239906613
+            ],
+            "t_inference": [
+                0.01678904300206341,
+                0.015259733991115354,
+                0.01724993700918276
+            ],
+            "hyperparams": [
+                {
+                    "objective": "reg:squarederror",
+                    "lambda": 5.66340927694451,
+                    "learning_rate": 0.021852506768159537,
+                    "n_estimators": 276,
+                    "max_depth": 6,
+                    "subsample": 0.5980179792301706,
+                    "colsample_bytree": 0.7042187187160207
+                },
+                {
+                    "objective": "reg:squarederror",
+                    "lambda": 6.691018100493688,
+                    "learning_rate": 0.032093154411380984,
+                    "n_estimators": 226,
+                    "max_depth": 6,
+                    "subsample": 0.7890099417373202,
+                    "colsample_bytree": 0.6677586816764262
+                },
+                {
+                    "objective": "reg:squarederror",
+                    "lambda": 1.218987134404372,
+                    "learning_rate": 0.024033153044392554,
+                    "n_estimators": 300,
+                    "max_depth": 6,
+                    "subsample": 0.7223691587817785,
+                    "colsample_bytree": 0.7065128515333634
+                }
+            ]
+        }
+    }
+}

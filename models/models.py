@@ -258,7 +258,7 @@ class RidgeModule(FittableModule):
         X_centered = X - X_mean
         y_centered = y - y_mean
         
-        A = X_centered.T @ X_centered + self.l2_reg * torch.eye(X.size(1))
+        A = X_centered.T @ X_centered + self.l2_reg * torch.eye(X.size(1), dtype=X.dtype, device=X.device)
         B = X_centered.T @ y_centered
         self.W = torch.linalg.solve(A, B)
         self.b = y_mean - (X_mean @ self.W)
@@ -565,63 +565,74 @@ def create_layer(
 
 
 ######################################
-##### Trainers                   #####
-##### - AdamTrainer              #####
+##### End2End MLPResNet       #####
 ######################################
 
-
-class E2EResNet(FittableModule):
+class End2EndMLPResNet(FittableModule):
     def __init__(self, 
                  in_dim: int,
-                 hidden_size: int,
+                 hidden_dim: int,
                  bottleneck_dim: int,
                  out_dim: int,
                  n_blocks: int,
-                 activation: nn.Module = nn.Tanh(),
-                 loss: nn.Module = nn.MSELoss(),
+                 activation: nn.Module = nn.ReLU(),
+                 loss: Literal["mse", "cross_entropy"] = "mse",
                  lr: float = 1e-3,
-                 epochs: int = 10,
+                 end_lr_factor: float = 1e-2,
+                 n_epochs: int = 10,
                  weight_decay: float = 1e-5,
                  batch_size: int = 64,
                  ):
-        """End-to-end trainer for residual networks using Adam optimizer with Batch Normalization.
+        """End-to-end trainer for residual networks using Adam optimizer 
+        with a CosineAnnealingLR scheduler with end_lr = lr * end_lr_factor.
         
         Args:
             in_dim (int): Input dimension.
-            hidden_size (int): Dimension of the hidden layers.
+            hidden_dim (int): Dimension of the hidden layers.
             bottleneck_dim (int): Dimension of the bottleneck layer.
             out_dim (int): Output dimension.
             n_blocks (int): Number of residual blocks.
             activation (nn.Module): Activation function.
             loss (nn.Module): Loss function.
             lr (float): Learning rate for Adam optimizer.
-            epochs (int): Number of training epochs.
+            end_lr_factor (float): Factor for the end learning rate in the scheduler.
+            n_epochs (int): Number of training epochs.
             weight_decay (float): Weight decay for Adam optimizer.
             batch_size (int): Batch size for training.
         """
-        super(E2EResNet, self).__init__()
-        self.epochs = epochs
+        super(End2EndMLPResNet, self).__init__()
+        self.n_epochs = n_epochs
         self.batch_size = batch_size
 
         # Define resnet with batch norm
-        self.upsample = nn.Linear(in_dim, hidden_size)
-        self.batch_norm = nn.BatchNorm1d(hidden_size)
+        self.upsample = nn.Linear(in_dim, hidden_dim)
+        self.batch_norm = nn.BatchNorm1d(hidden_dim)
         self.activation = activation
         
         self.residual_blocks = nn.ModuleList([
             nn.Sequential(
-                nn.Linear(hidden_size, bottleneck_dim),
+                nn.Linear(hidden_dim, bottleneck_dim),
                 nn.BatchNorm1d(bottleneck_dim),
                 activation,
-                nn.Linear(bottleneck_dim, hidden_size),
-                nn.BatchNorm1d(hidden_size)
+                nn.Linear(bottleneck_dim, hidden_dim),
+                nn.BatchNorm1d(hidden_dim)
             ) for _ in range(n_blocks)
         ])
-        self.output_layer = nn.Linear(hidden_size, out_dim)
+        self.output_layer = nn.Linear(hidden_dim, out_dim)
 
-        # Optimizer and loss
-        self.loss = loss
+        # Optimizer
         self.optimizer = torch.optim.Adam(self.parameters(), lr=lr, weight_decay=weight_decay)
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer, T_max=n_epochs, eta_min = lr * end_lr_factor
+            )
+        
+        # Loss (need to do it like this due to optuna)
+        if loss == "mse":
+            self.loss = nn.MSELoss()
+        elif loss == "cross_entropy":
+            self.loss = nn.CrossEntropyLoss()
+        else:
+            raise ValueError(f"Unknown value of loss argument. Given: {loss}")
 
 
     def fit(self, X: Tensor, y: Tensor):
@@ -638,13 +649,14 @@ class E2EResNet(FittableModule):
         )
 
         # training loop
-        for epoch in tqdm(range(self.epochs)):
+        for epoch in tqdm(range(self.n_epochs)):
             for batch_X, batch_y in loader:
                 self.optimizer.zero_grad()
                 outputs = self(batch_X)
                 loss = self.loss(outputs, batch_y)
                 loss.backward()
                 self.optimizer.step()
+            self.scheduler.step()
 
         return self
 
@@ -657,9 +669,6 @@ class E2EResNet(FittableModule):
             X = X + block(X)
         X = self.output_layer(X)
         return X
-
-
-
 
 
 

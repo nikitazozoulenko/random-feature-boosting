@@ -3,6 +3,7 @@ import argparse
 
 from tqdm import tqdm
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,7 +11,7 @@ from torch import Tensor
 from ucimlrepo import fetch_ucirepo 
 
 from optuna_kfoldCV import evaluate_pytorch_model_kfoldcv, evaluate_dataset_with_model
-from models.models import GreedyRandFeatBoostRegression, GradientRandFeatBoostRegression, RidgeModule
+from models.models import GreedyRandFeatBoostRegression, GradientRandFeatBoostRegression, RidgeModule, End2EndMLPResNet
 from regression_param_specs import evaluate_Ridge
 
 
@@ -60,17 +61,48 @@ def pytorch_load_forestfire(device='cpu'):
 
 def pytorch_load_abalone(device='cpu'):
     """Downloads and preprocesses the Abalone dataset"""
+    abalone = fetch_ucirepo(id=1) 
+    X = abalone.data.features 
+    y = abalone.data.targets
+
+    # Preprocess the dataset
+    X = pd.get_dummies(X, columns=['Sex'], prefix='', prefix_sep='')
+
+    # make into torch tensors
+    X = torch.tensor(X.astype(float).values, dtype=torch.float32, device=device)
+    y = torch.tensor(y.values, dtype=torch.float32, device=device)
+    X = normalize_data(X)
+    y = normalize_data(y)
+    return X, y
 
 
 
 def pytorch_load_wine_quality(device='cpu'):
     """Downloads and preprocesses the Wine Quality UCI dataset"""
+    wine_quality = fetch_ucirepo(id=186) 
+    X = wine_quality.data.original 
+    y = wine_quality.data.targets
+
+    # Preprocess the dataset.
+    full_data = pd.concat([X, y], axis=1)
+    full_data = full_data.drop_duplicates()
+    full_data["color"] = (full_data["color"] == "red")
+    X = full_data.drop(columns="quality")
+    y = full_data["quality"]
+
+    # make into torch tensors
+    X = torch.tensor(X.astype(float).values, dtype=torch.float32, device=device)
+    y = torch.tensor(y.values, dtype=torch.float32, device=device)
+    X = normalize_data(X)
+    y = normalize_data(y)
+    return X, y
 
 
 
 def pytorch_load_yearpredictionmsd(device='cpu'):
-    """Downloads and preprocesses the Music Year Prediction UCI dataset"""
+    """Downloads and preprocesses the Music Year Prediction UCI dataset.
 
+    NOTE fetch_ucirepo(id=203) not supported. Need to download manually"""
 
 
 ######################################################  |
@@ -153,12 +185,61 @@ def get_GreedyRFBoost_eval_fun(
 
 
 
+from regression_param_specs import evaluate_Ridge, evaluate_XGBoostRegressor
+def get_Ridge_eval_fun(
+        n_layers: int,
+        ):
+    """Returns a function that evaluates the Ridge model.
+    The number of layers is not used in this model."""
+    return evaluate_Ridge
+
+
+
+def get_XGBoost_eval_fun(
+        n_layers: int,
+        ):
+    """Returns a function that evaluates the XGBoost model.
+    The number of layers is not used in this model."""
+    return evaluate_XGBoostRegressor
+
+
+
 def get_End2End_eval_fun(
         n_layers: int,
         ):
     """Returns a function that evaluates the End2End model
     with the specified number of layers"""
-    # TODO
+    def evaluate_End2End(
+            X: Tensor,
+            y: Tensor,
+            k_folds: int,
+            cv_seed: int,
+            regression_or_classification: str,
+            n_optuna_trials: int,
+            device: Literal["cpu", "cuda"],
+            ):
+        ModelClass = End2EndMLPResNet
+        get_optuna_params = lambda trial : {
+            "in_dim": trial.suggest_categorical("in_dim", [X.size(1)]),         # Fixed value
+            "out_dim": trial.suggest_categorical("out_dim", [y.size(1)]),       # Fixed value
+            "n_blocks": trial.suggest_categorical("n_blocks", [n_layers]),      # Fixed value
+            "loss": trial.suggest_categorical("loss", ["mse"]),# Fixed value
+            
+            "hidden_dim": trial.suggest_int("hidden_dim", 32, 128, log=True),         ## change to stepsize
+            "bottleneck_dim": trial.suggest_int("bottleneck_dim", 32, 128, log=True), ## change to stepsize
+            "lr": trial.suggest_float("lr", 0.0001, 0.1, log=True),
+            "end_lr_factor": trial.suggest_float("end_lr_factor", 0.01, 1.0, log=True),
+            "n_epochs": trial.suggest_int("n_epochs", 5, 30, log=True),              ## change to stepsize
+            "weight_decay": trial.suggest_float("weight_decay", 1e-6, 0.01, log=True),
+            "batch_size": trial.suggest_categorical("batch_size", [128, 256, 512]),  ## change to stepsize
+        }
+
+        return evaluate_pytorch_model_kfoldcv(
+            ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
+            regression_or_classification, n_optuna_trials, device,
+            )
+    return evaluate_End2End
+
 
 
 
@@ -231,6 +312,12 @@ def parse_args():
         default=42,
         help="Seed for all randomness."
     )
+    parser.add_argument(
+        "--start_n_layers_from",
+        type=int,
+        default=1,
+        help="What number of layers to start counting from."
+    )
     return parser.parse_args()
 
 
@@ -257,29 +344,34 @@ if __name__ == "__main__":
         
         # Run experiments for each model
         for model_name in args.models:
-            if model_name == "GradientRFBoost":
+            if model_name == "End2End":
+                get_eval_fun = lambda t : get_End2End_eval_fun(t)
+            elif model_name == "Ridge":
+                get_eval_fun = lambda t : get_Ridge_eval_fun(t)
+            elif model_name == "GradientRFBoost":
                 get_eval_fun = lambda t : get_GradientRFBoost_eval_fun(t)
             elif model_name == "GreedyRFBoost":
                 get_eval_fun = lambda t : get_GreedyRFBoost_eval_fun(t)
-            elif model_name == "End2End":
-                get_eval_fun = lambda t : get_End2End_eval_fun(t)
             elif model_name == "RandomFeatureResNet":
                 get_eval_fun = lambda t : get_RandomFeatureResNet_eval_fun(t)
+            elif model_name == "XGBoostRegressor":
+                get_eval_fun = lambda t : get_XGBoost_eval_fun(t)
             else:
                 raise ValueError(f"Unknown model name: {model_name}")
             
-            # Run the evaluation function
-            for t in range(1, MAX_n_layers+1):
+            # Run the evaluation function for each number of layers
+            for t in range(args.start_n_layers_from, MAX_n_layers+1):
                 new_model_name = model_name+f"_t{t}"
                 print("t", t, "model_name", model_name, "dataset_name", dataset_name)
                 eval_fun = get_eval_fun(t)
+                # to not run models that do not depend on t multiple times
                 json = evaluate_dataset_with_model(
                     X, y, dataset_name, eval_fun, new_model_name, args.k_folds, args.cv_seed, 
                     "regression", args.n_optuna_trials, args.device, args.save_dir
                     )
                 print(json)
                 print("Finished running experiments for model", new_model_name, "on dataset", dataset_name, "with", t, "layers.")
-                print("Combined training time for all folds:", json[dataset_name][new_model_name]["t_fit"])
+                print("Training time for inner folds:", json[dataset_name][new_model_name]["t_fit"])
 
-                if model_name == "Ridge":
+                if model_name in ["Ridge", "XGBoostRegressor"]:
                     break

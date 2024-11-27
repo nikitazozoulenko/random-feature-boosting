@@ -1,0 +1,55 @@
+{
+    "wine_quality": {
+        "GradientRFBoost_t7": {
+            "score_train": [
+                0.7849230766296387,
+                0.7964349389076233,
+                0.7587969303131104
+            ],
+            "score_test": [
+                0.7923193573951721,
+                0.7944780588150024,
+                0.8293874859809875
+            ],
+            "t_fit": [
+                0.07408629100245889,
+                0.06508499100164045,
+                0.06737944400811102
+            ],
+            "t_inference": [
+                0.002929427006165497,
+                0.00228430399147328,
+                0.0019699179974850267
+            ],
+            "hyperparams": [
+                {
+                    "out_dim": 2,
+                    "n_layers": 7,
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "hidden_dim": 127,
+                    "bottleneck_dim": 81,
+                    "boost_lr": 0.7368306154747544
+                },
+                {
+                    "out_dim": 2,
+                    "n_layers": 7,
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "hidden_dim": 107,
+                    "bottleneck_dim": 113,
+                    "boost_lr": 0.26582387471343105
+                },
+                {
+                    "out_dim": 2,
+                    "n_layers": 7,
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "hidden_dim": 81,
+                    "bottleneck_dim": 103,
+                    "boost_lr": 0.3809632345029738
+                }
+            ]
+        }
+    }
+}
