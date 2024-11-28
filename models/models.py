@@ -683,7 +683,7 @@ class End2EndMLPResNet(FittableModule):
 class GreedyRandFeatBoostRegression(FittableModule):
     def __init__(self, 
                  hidden_dim: int = 128,
-                 bottleneck_dim: Optional[int] = 32, #if None, use hidden_dim
+                 bottleneck_dim: Optional[int] = None, #if None, use hidden_dim
                  out_dim: int = 1,
                  n_layers: int = 5,
                  activation: nn.Module = nn.Tanh(),
@@ -696,8 +696,10 @@ class GreedyRandFeatBoostRegression(FittableModule):
                  ):
         super(GreedyRandFeatBoostRegression, self).__init__()
         if bottleneck_dim is None:
-            bottleneck_dim = hidden_dim
-            
+            self.bottleneck_dim = hidden_dim
+        else:
+            self.bottleneck_dim = bottleneck_dim
+
         self.hidden_dim = hidden_dim
         self.out_dim = out_dim
         self.n_layers = n_layers
@@ -718,26 +720,23 @@ class GreedyRandFeatBoostRegression(FittableModule):
             self.sandwich_solver = sandwiched_LS_scalar
             self.XDelta_op = self.XDelta_scalar
             self.bottleneck_dim = hidden_dim
-        
-
-        self.W = None
-        self.b = None
-        self.layers = []
-        self.deltas = []
 
 
     def fit(self, X: Tensor, y: Tensor):
+        X0 = X
         with torch.no_grad():
             #optional upscale
             if self.upscale == "dense":
-                self.upscale = create_layer(self.upscale, X.shape[1], self.hidden_dim, None)
-                X = self.upscale.fit_transform(X, y)
+                self.upscale_fun = create_layer(self.upscale, X0.shape[1], self.hidden_dim, None)
+                X = self.upscale_fun.fit_transform(X, y)
             elif self.upscale == "SWIM":
-                self.upscale = create_layer(self.upscale, X.shape[1], self.hidden_dim, self.activation)
-                X = self.upscale.fit_transform(X, y)
+                self.upscale_fun = create_layer(self.upscale, X0.shape[1], self.hidden_dim, self.activation)
+                X = self.upscale_fun.fit_transform(X, y)
 
             # Create regressor W_0
             self.W, self.b, alpha = fit_ridge_ALOOCV(X, y)
+            self.layers = []
+            self.deltas = []
 
             # Layerwise boosting
             for t in range(self.n_layers):
@@ -750,6 +749,7 @@ class GreedyRandFeatBoostRegression(FittableModule):
                 R = y - X @ self.W - self.b # residual
                 Delta = self.sandwich_solver(R, self.W, F, self.l2_reg)
                 self.deltas.append(Delta)
+                # print(t, "X norm", torch.norm(X), "Delta", Delta)
 
                 # Step 3: Learn top level classifier W_t
                 X = X + self.boost_lr * self.XDelta_op(F, Delta)
@@ -773,7 +773,7 @@ class GreedyRandFeatBoostRegression(FittableModule):
         with torch.no_grad():
             #upscale
             if self.upscale is not None:
-                X = self.upscale(X)
+                X = self.upscale_fun(X)
             # Boosting
             for layer, Delta in zip(self.layers, self.deltas):
                 X = X + self.boost_lr * self.XDelta_op(layer(X), Delta)
@@ -808,25 +808,22 @@ class GradientRandFeatBoostRegression(FittableModule):
         self.boost_lr = boost_lr
         self.upscale = upscale
 
-        # save for now. for more memory efficient implementation, we can remove a lot of this
-        self.W = None
-        self.b = None
-        self.layers = []
-        self.deltas = []
 
 
     def fit(self, X: Tensor, y: Tensor):
         with torch.no_grad():
             #optional upscale
             if self.upscale == "dense":
-                self.upscale = create_layer(self.upscale, X.shape[1], self.hidden_dim, None)
-                X = self.upscale.fit_transform(X, y)
+                self.upscale_fun = create_layer(self.upscale, X.shape[1], self.hidden_dim, None)
+                X = self.upscale_fun.fit_transform(X, y)
             elif self.upscale == "SWIM":
-                self.upscale = create_layer(self.upscale, X.shape[1], self.hidden_dim, self.activation)
-                X = self.upscale.fit_transform(X, y)
+                self.upscale_fun = create_layer(self.upscale, X.shape[1], self.hidden_dim, self.activation)
+                X = self.upscale_fun.fit_transform(X, y)
 
             # Create regressor W_0
             self.W, self.b, _ = fit_ridge_ALOOCV(X, y)
+            self.layers = []
+            self.deltas = []
 
             # Layerwise boosting
             N = X.size(0)
@@ -872,16 +869,24 @@ class GradientRandFeatBoostRegression(FittableModule):
     def forward(self, X: Tensor) -> Tensor:
         with torch.no_grad():
             if self.upscale is not None:
-                X = self.upscale(X)
+                X = self.upscale_fun(X)
             for layer, (Delta, Delta_b) in zip(self.layers, self.deltas):
                 X = X + self.boost_lr * (layer(X) @ Delta + Delta_b)
             return X @ self.W + self.b
         
 
+######################################################
+########## CONCAT fxt fx0 --- Regression #############
+######################################################
 
 
 
 
+
+
+#######################################
+########## Classification #############
+#######################################
 
 
 def line_search_cross_entropy(cls, X, y, G_hat):
