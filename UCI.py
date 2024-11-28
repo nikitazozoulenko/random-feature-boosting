@@ -80,22 +80,23 @@ def pytorch_load_abalone(device='cpu'):
 def pytorch_load_wine_quality(device='cpu'):
     """Downloads and preprocesses the Wine Quality UCI dataset"""
     wine_quality = fetch_ucirepo(id=186) 
-    X = wine_quality.data.original 
-    y = wine_quality.data.targets
+    full_data = wine_quality.data.original 
 
-    # Preprocess the dataset.
-    full_data = pd.concat([X, y], axis=1)
+
+    # Preprocess the dataset
     full_data = full_data.drop_duplicates()
-    full_data["color"] = (full_data["color"] == "red")
+    full_data.loc[:, "color"] = (full_data["color"] == "red")
     X = full_data.drop(columns="quality")
     y = full_data["quality"]
-
+    
     # make into torch tensors
     X = torch.tensor(X.astype(float).values, dtype=torch.float32, device=device)
-    y = torch.tensor(y.values, dtype=torch.float32, device=device)
+    y = torch.tensor(y.values, dtype=torch.float32, device=device)[:, None]
     X = normalize_data(X)
     y = normalize_data(y)
     return X, y
+
+
 
 
 
@@ -133,9 +134,9 @@ def get_GradientRFBoost_eval_fun(
             "feature_type": trial.suggest_categorical("feature_type", [feature_type]),  # Fixed value
             "upscale": trial.suggest_categorical("upscale", [upscale]),                 # Fixed value
 
-            "hidden_dim": trial.suggest_int("hidden_dim", 16, 128, log=True),
-            "bottleneck_dim": trial.suggest_int("bottleneck_dim", 16, 128, log=True),
-            "boost_lr": trial.suggest_float("boost_lr", 0.1, 1.0, log=True),
+            "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
+            "bottleneck_dim": trial.suggest_int("bottleneck_dim", 128, 512, log=True),
+            "boost_lr": trial.suggest_float("boost_lr", 0.5, 1.0, log=True),
         }
 
         return evaluate_pytorch_model_kfoldcv(
@@ -172,10 +173,10 @@ def get_GreedyRFBoost_eval_fun(
             "sandwich_solver": trial.suggest_categorical("sandwich_solver", [sandwich_solver]), # Fixed value
             "upscale": trial.suggest_categorical("upscale", [upscale]), # Fixed value
 
-            "hidden_dim": trial.suggest_int("hidden_dim", 16, 128, log=True),
-            "bottleneck_dim": trial.suggest_int("bottleneck_dim", 16, 128, log=True) if sandwich_solver=="dense" else None,
+            "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
+            "bottleneck_dim": trial.suggest_int("bottleneck_dim", 128, 512, log=True) if sandwich_solver=="dense" else trial.suggest_categorical("bottleneck_dim", [None]),
             "l2_reg": trial.suggest_float("l2_reg", 1e-6, 0.1, log=True),
-            "boost_lr": trial.suggest_float("boost_lr", 0.1, 1.0, log=True),
+            "boost_lr": trial.suggest_float("boost_lr", 0.5, 1.0, log=True),
         }
 
         return evaluate_pytorch_model_kfoldcv(
