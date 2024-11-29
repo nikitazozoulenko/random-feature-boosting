@@ -18,8 +18,6 @@ from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import KFold
 import xgboost as xgb
 
-from models.models import GradientRandFeatBoostRegression, RidgeCVModule, RidgeModule
-
 
 #########################  |
 ##### Dataset Code  #####  |

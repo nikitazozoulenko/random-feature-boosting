@@ -7,7 +7,7 @@ from torch import Tensor
 def fit_ridge_ALOOCV(
         X: Tensor,
         y: Tensor,
-        alphas: List[float] = [0.001, 0.01, 0.1, 1, 10],
+        alphas: List[float] = [0.001, 0.01, 0.1, 1, 10, 100, 1000],
         fit_intercept: bool = True
     ) -> Tuple[Tensor, float]:
     """
@@ -36,7 +36,7 @@ def fit_ridge_ALOOCV(
 
     # Convert alphas to tensor on the same device as X
     alphas = torch.tensor(alphas, device=X.device, dtype=X.dtype) # Shape (n_alphas,)
-    eigvals, eigvecs = torch.linalg.eigh(X.T @ X)  # eigvals: (D,), eigvecs: (D, D)
+    eigvecs, eigvals, _ = torch.linalg.svd(X.T @ X, full_matrices=False)  # eigvals: (D,), eigvecs: (D, D) NOTE linalg.eigh throws errors for cuda due to cuBLAS solver. date=2024
 
     # Project y onto the eigenspace
     XTy = X.T @ y  # Shape (D, p)

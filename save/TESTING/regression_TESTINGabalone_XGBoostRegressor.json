@@ -1,0 +1,49 @@
+{
+    "TESTINGabalone": {
+        "XGBoostRegressor": {
+            "score_train": [
+                0.5649176836013794,
+                0.5545571446418762,
+                0.6043372750282288
+            ],
+            "score_test": [
+                0.6740512847900391,
+                0.700657844543457,
+                0.6496037244796753
+            ],
+            "t_fit": [
+                0.12001674699786236,
+                0.12992687599762576,
+                0.035491411999828415
+            ],
+            "t_inference": [
+                0.006634412002313184,
+                0.00610781200157362,
+                0.0023755059992254246
+            ],
+            "hyperparams": [
+                {
+                    "objective": "reg:squarederror",
+                    "lambda": 8.654378874605388,
+                    "learning_rate": 0.03276025755710436,
+                    "n_estimators": 284,
+                    "max_depth": 4
+                },
+                {
+                    "objective": "reg:squarederror",
+                    "lambda": 0.27087144153481,
+                    "learning_rate": 0.010379037683082149,
+                    "n_estimators": 275,
+                    "max_depth": 5
+                },
+                {
+                    "objective": "reg:squarederror",
+                    "lambda": 2.94834515213246,
+                    "learning_rate": 0.05157620362523294,
+                    "n_estimators": 90,
+                    "max_depth": 4
+                }
+            ]
+        }
+    }
+}

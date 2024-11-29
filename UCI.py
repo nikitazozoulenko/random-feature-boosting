@@ -11,7 +11,7 @@ from torch import Tensor
 from ucimlrepo import fetch_ucirepo 
 
 from optuna_kfoldCV import evaluate_pytorch_model_kfoldcv, evaluate_dataset_with_model
-from models.models import GreedyRandFeatBoostRegression, GradientRandFeatBoostRegression, RidgeModule, End2EndMLPResNet
+from models.models import GreedyRandFeatBoostRegression, GradientRandFeatBoostReg, RidgeModule, End2EndMLPResNet
 from regression_param_specs import evaluate_Ridge
 
 
@@ -127,16 +127,17 @@ def get_GradientRFBoost_eval_fun(
             n_optuna_trials: int,
             device: Literal["cpu", "cuda"],
             ):
-        ModelClass = GradientRandFeatBoostRegression
+        ModelClass = GradientRandFeatBoostReg
         get_optuna_params = lambda trial : {
             "out_dim": trial.suggest_categorical("out_dim", [y.size(1)]),               # Fixed value
             "n_layers": trial.suggest_categorical("n_layers", [n_layers]),              # Fixed value
             "feature_type": trial.suggest_categorical("feature_type", [feature_type]),  # Fixed value
             "upscale": trial.suggest_categorical("upscale", [upscale]),                 # Fixed value
 
-            "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
-            "bottleneck_dim": trial.suggest_int("bottleneck_dim", 128, 512, log=True),
-            "boost_lr": trial.suggest_float("boost_lr", 0.5, 1.0, log=True),
+            "hidden_dim": trial.suggest_int("hidden_dim", 16, 144, step=32),
+            "randfeat_xt_dim": trial.suggest_int("randfeat_xt_dim", 128, 512, step=128),
+            "randfeat_x0_dim": trial.suggest_int("randfeat_x0_dim", 128, 512, step=128),
+            "boost_lr": trial.suggest_float("boost_lr", 0.7, 1.0, step=0.1),
         }
 
         return evaluate_pytorch_model_kfoldcv(
@@ -227,7 +228,7 @@ def get_End2End_eval_fun(
             "n_blocks": trial.suggest_categorical("n_blocks", [n_layers]),      # Fixed value
             "loss": trial.suggest_categorical("loss", ["mse"]),# Fixed value
             
-            "hidden_dim": trial.suggest_int("hidden_dim", 32, 128, log=True),         ## change to stepsize
+            "hidden_dim": trial.suggest_int("hidden_dim", 32, 128, step=32),         ## change to stepsize
             "bottleneck_dim": trial.suggest_int("bottleneck_dim", 32, 128, log=True), ## change to stepsize
             "lr": trial.suggest_float("lr", 0.0001, 0.1, log=True),
             "end_lr_factor": trial.suggest_float("end_lr_factor", 0.01, 1.0, log=True),
