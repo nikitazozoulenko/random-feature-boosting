@@ -167,6 +167,9 @@ class SWIMLayer(FittableModule):
             y (Tensor): Training labels, shape (N, p).
         """
         self.to(X.device)
+        if self.out_dim == 0:
+            return self
+        
         with torch.no_grad():
             N, D = X.shape
             dtype = X.dtype
@@ -784,22 +787,23 @@ class GreedyRandFeatBoostRegression(FittableModule):
 
 
 
-
-class GradientRandFeatBoostRegression(FittableModule):
+class GradientRandFeatBoostReg(FittableModule):
     def __init__(self, 
                  hidden_dim: int = 128,
-                 bottleneck_dim: int = 128,
+                 randfeat_xt_dim: int = 128,
+                 randfeat_x0_dim: int = 128,
                  out_dim: int = 1,
                  n_layers: int = 5,
                  activation: nn.Module = nn.Tanh(),
-                #  l2_reg: float = 0.01,   #TODO ALOOCV or fixed l2_reg
+                 #  l2_reg: float = 0.01,   #TODO ALOOCV or fixed l2_reg
                  feature_type = "SWIM", # "dense", identity
                  boost_lr: float = 1.0,
                  upscale: Optional[str] = "dense",
                  ):
-        super(GradientRandFeatBoostRegression, self).__init__()
+        super(GradientRandFeatBoostReg, self).__init__()
         self.hidden_dim = hidden_dim
-        self.bottleneck_dim = bottleneck_dim
+        self.randfeat_xt_dim = randfeat_xt_dim
+        self.randfeat_x0_dim = randfeat_x0_dim
         self.out_dim = out_dim
         self.n_layers = n_layers
         self.activation = activation
@@ -809,9 +813,9 @@ class GradientRandFeatBoostRegression(FittableModule):
         self.upscale = upscale
 
 
-
     def fit(self, X: Tensor, y: Tensor):
         with torch.no_grad():
+            X0 = X
             #optional upscale
             if self.upscale == "dense":
                 self.upscale_fun = create_layer(self.upscale, X.shape[1], self.hidden_dim, None)
@@ -819,60 +823,75 @@ class GradientRandFeatBoostRegression(FittableModule):
             elif self.upscale == "SWIM":
                 self.upscale_fun = create_layer(self.upscale, X.shape[1], self.hidden_dim, self.activation)
                 X = self.upscale_fun.fit_transform(X, y)
+            elif self.upscale == "identity":
+                self.upscale_fun = Identity()
+                self.hidden_dim = X0.size(1)
+            else:
+                raise ValueError(f"Parameter not recoginized. Given: {self.upscale}")
 
             # Create regressor W_0
-            self.W, self.b, _ = fit_ridge_ALOOCV(X, y)
-            self.layers = []
+            W, b, _ = fit_ridge_ALOOCV(X, y)
+            self.layers_fxt = []
+            self.layers_fx0 = []
             self.deltas = []
+            self.Ws = [W]
+            self.bs = [b]
 
             # Layerwise boosting
             N = X.size(0)
             for t in range(self.n_layers):
-                # Step 1: Create random feature layer   
-                layer = create_layer(self.feature_type, self.hidden_dim, self.bottleneck_dim, self.activation)
-                F = layer.fit_transform(X, y)
+                # X0 shape (N, raw_in_dim) --- raw input data
+                # X  shape (N, D) --- ResNet neurons
+                # F  shape (N, p) --- random features
+                # y  shape (N, d) --- target data
+                # W  shape (D, d) --- top level classifier
+                # G  shape (N, D) --- gradient of neurons
+                # r  shape (N, d) --- residual at currect boosting iteration
+                # Delta shape (p, D) --- random feature weights
+
+                # Step 1: Create random feature layer
+                fxt_fun = create_layer(self.feature_type, self.hidden_dim, self.randfeat_xt_dim, self.activation)
+                fx0_fun = create_layer(self.feature_type, X0.size(1), self.randfeat_x0_dim, self.activation)
+                Fxt = fxt_fun.fit_transform(X, y)
+                Fx0 = fx0_fun.fit_transform(X0, y)
+                F = torch.cat([Fxt, Fx0], dim=1)
 
                 # Step 2: Obtain activation gradient and learn Delta
-                # X shape (N, D) --- ResNet neurons
-                # F shape (N, p) --- random features
-                # y shape (N, d) --- target
-                # W shape (D, d) --- top level classifier
-                # G shape (N, D) --- gradient of neurons
-                # r shape (N, d) --- residual at currect boosting iteration
-
-                r = y - X @ self.W - self.b
-                G = r @ self.W.T
-                
+                r = y - X @ W - b
+                G = r @ W.T
                 # fit to negative gradient (finding functional direction)
                 Delta, Delta_b, _ = fit_ridge_ALOOCV(F, G)
-                Ghat = F @ Delta + Delta_b
-
-                # Line search closed form risk minimization of R(W_t, Phi_{t+1})
-                linesearch = sandwiched_LS_scalar(r, self.W, Ghat, 0.01)
+                Ghat = (F @ Delta + Delta_b)
+                # line search closed form risk minimization of R(W_t, Phi_{t+1})
+                eps = 1e-5
+                linesearch = sandwiched_LS_scalar(r, W, Ghat, eps)
 
 
                 # Step 3: Learn top level classifier
                 X = X + self.boost_lr * linesearch * Ghat
-                self.W, self.b, alpha = fit_ridge_ALOOCV(X, y)
-
-                #update Delta scale
+                W, b, _ = fit_ridge_ALOOCV(X, y) #TODO i might want to fix this.... not have ALOOCV
+                # update Delta magnitude
                 Delta = Delta * linesearch
                 Delta_b = Delta_b * linesearch
-
                 # store
-                self.layers.append(layer)
+                self.layers_fxt.append(fxt_fun)
+                self.layers_fx0.append(fx0_fun)
                 self.deltas.append((Delta, Delta_b))
+                self.Ws.append(W)
+                self.bs.append(b)
 
-            return X @ self.W + self.b, y
-
+            return X @ W + b
+        
 
     def forward(self, X: Tensor) -> Tensor:
         with torch.no_grad():
+            X0 = X
             if self.upscale is not None:
                 X = self.upscale_fun(X)
-            for layer, (Delta, Delta_b) in zip(self.layers, self.deltas):
-                X = X + self.boost_lr * (layer(X) @ Delta + Delta_b)
-            return X @ self.W + self.b
+            for fxt_fun, fx0_fun, (Delta, Delta_b) in zip(self.layers_fxt, self.layers_fx0, self.deltas):
+                features = torch.cat([fxt_fun(X), fx0_fun(X0)], dim=1)
+                X = X + self.boost_lr * (features @ Delta + Delta_b)
+            return X @ self.Ws[-1] + self.bs[-1]
         
 
 ######################################################
