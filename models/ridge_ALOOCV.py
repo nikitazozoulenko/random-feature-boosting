@@ -34,8 +34,10 @@ def fit_ridge_ALOOCV(
         X = X - X.mean(dim=0)
         y = y - y.mean(dim=0)
 
+    N = X.size(0)
+    
     # Convert alphas to tensor on the same device as X
-    alphas = torch.tensor(alphas, device=X.device, dtype=X.dtype) # Shape (n_alphas,)
+    alphas = torch.tensor(alphas, device=X.device, dtype=X.dtype) * N  # Shape (n_alphas,)
     eigvecs, eigvals, _ = torch.linalg.svd(X.T @ X, full_matrices=False)  # eigvals: (D,), eigvecs: (D, D) NOTE linalg.eigh throws errors for cuda due to cuBLAS solver. date=2024
 
     # Project y onto the eigenspace
@@ -59,7 +61,7 @@ def fit_ridge_ALOOCV(
 
     # Find the best alpha
     best_idx = errors.argmin()
-    best_alpha = alphas[best_idx].item()
+    best_alpha = alphas[best_idx].item() / N
     beta_optimal = beta_ridge[:, best_idx, :]  # Shape (D, p)
 
     if fit_intercept:

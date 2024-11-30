@@ -177,7 +177,7 @@ class SWIMLayer(FittableModule):
             EPS = torch.tensor(self.epsilon, dtype=dtype, device=device)
 
             #obtain pair indices
-            n = 3*N
+            n = 8*N
             idx1 = torch.arange(0, n, dtype=torch.int32, device=device) % N
             delta = torch.randint(1, N, size=(n,), dtype=torch.int32, device=device)
             idx2 = (idx1 + delta) % N
@@ -261,8 +261,10 @@ class RidgeModule(FittableModule):
         X_centered = X - X_mean
         y_centered = y - y_mean
         
-        A = X_centered.T @ X_centered + self.l2_reg * torch.eye(X.size(1), dtype=X.dtype, device=X.device)
+        N = X.size(0)
+        A = X_centered.T @ X_centered + self.l2_reg * N * torch.eye(X.size(1), dtype=X.dtype, device=X.device)
         B = X_centered.T @ y_centered
+        print(X.size(0), A)
         self.W = torch.linalg.solve(A, B)
         self.b = y_mean - (X_mean @ self.W)
         return self
@@ -725,7 +727,7 @@ class GreedyRandFeatBoostRegression(FittableModule):
             self.bottleneck_dim = hidden_dim
 
 
-    def fit(self, X: Tensor, y: Tensor):
+    def fit_transform(self, X: Tensor, y: Tensor):
         X0 = X
         with torch.no_grad():
             #optional upscale
@@ -758,7 +760,7 @@ class GreedyRandFeatBoostRegression(FittableModule):
                 X = X + self.boost_lr * self.XDelta_op(F, Delta)
                 self.W, self.b, alpha = fit_ridge_ALOOCV(X, y)
 
-            return X @ self.W + self.b, y
+            return X @ self.W + self.b
 
     @staticmethod
     def XDelta_scalar(X: Tensor, Delta: Tensor) -> Tensor:
@@ -813,7 +815,7 @@ class GradientRandFeatBoostReg(FittableModule):
         self.upscale = upscale
 
 
-    def fit(self, X: Tensor, y: Tensor):
+    def fit_transform(self, X: Tensor, y: Tensor):
         with torch.no_grad():
             X0 = X
             #optional upscale
