@@ -152,11 +152,11 @@ def get_GreedyRFBoost_eval_fun(
         n_layers: int,
         feature_type: Literal["dense", "SWIM"] = "SWIM",
         sandwich_solver: Literal["scalar", "diag", "dense"] = "dense",
-        upscale: Literal["dense", "SWIM"] = "dense",
+        upscale: Literal["dense", "SWIM", "identity"] = "dense",
         ):
     """Returns a function that evaluates the GreedyRFBoost model
     with the specified number of layers"""
-    def evaluate_GRFBoost(
+    def evaluate_GreedyRFBoost(
             X: Tensor,
             y: Tensor,
             k_folds: int,
@@ -184,7 +184,7 @@ def get_GreedyRFBoost_eval_fun(
             ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
             regression_or_classification, n_optuna_trials, device,
         )
-    return evaluate_GRFBoost
+    return evaluate_GreedyRFBoost
 
 
 
@@ -226,7 +226,7 @@ def get_End2End_eval_fun(
             "in_dim": trial.suggest_categorical("in_dim", [X.size(1)]),         # Fixed value
             "out_dim": trial.suggest_categorical("out_dim", [y.size(1)]),       # Fixed value
             "n_blocks": trial.suggest_categorical("n_blocks", [n_layers]),      # Fixed value
-            "loss": trial.suggest_categorical("loss", ["mse"]),# Fixed value
+            "loss": trial.suggest_categorical("loss", ["mse"]),                 # Fixed value
             
             "hidden_dim": trial.suggest_int("hidden_dim", 32, 128, step=32),         ## change to stepsize
             "bottleneck_dim": trial.suggest_int("bottleneck_dim", 32, 128, log=True), ## change to stepsize
