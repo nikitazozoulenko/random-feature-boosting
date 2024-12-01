@@ -1,0 +1,50 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>44969</oml:id>
+  <oml:name>naval_propulsion_plant</oml:name>
+  <oml:version>7</oml:version>
+  <oml:description>**Data Description**
+
+Data have been generated from a sophisticated simulator of a Gas Turbines (GT), mounted on a Frigate characterized by a COmbined Diesel eLectric And Gas (CODLAG) propulsion plant type.
+
+The propulsion system behaviour has been described with this parameters:
+- Ship speed (linear function of the lever position lp).
+- Compressor degradation coefficient kMc.
+- Turbine degradation coefficient kMt.
+so that each possible degradation state can be described by a combination of this triple (lp,kMt,kMc).
+
+A series of measures (16 features) which indirectly represents the state of the system subject to performance decay has been acquired and stored in the dataset over the parameter's space.
+
+The goal is to estimate gt_compressor_decay_state_coefficient from the given measurements.
+
+The columns gt_compressor_inlet_air_pressure, gt_compressor_inlet_air_temperature from the original dataset were
+removed because they have constant values.
+
+
+**Attribute Description**
+
+1. *lever_position*
+2. *ship_speed*
+3. *gas_turbine_shaft_torque*
+4. *gas_turbine_rate_of_revolutions*
+5. *gas_generator_rate_of_revolutions*
+6. *starboard_propeller_torque*
+7. *port_propeller_torque*
+8. *hp_turbine_exit_temperature*
+9. *gt_compressor_inlet_air_temperature*
+10. *gt_compressor_outlet_air_temperature*
+11. *hp_turbine_exit_pressure*
+12. *gt_compressor_inlet_air_pressure*
+13. *gt_compressor_outlet_air_pressure*
+14. *gas_turbine_exhaust_gas_pressure*
+15. *turbine_injecton_control*
+16. *fuel_flow*
+17. *gt_compressor_decay_state_coefficient* - target feature
+18. *gt_turbine_decay_state_coefficient* - alternate target feature</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>arff</oml:format>
+        <oml:upload_date>2022-12-22T16:13:04</oml:upload_date>
+    <oml:licence>CC BY 4.0</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/22111833/naval_propulsion_plant.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0004/44969/dataset_44969.pq</oml:parquet_url>  <oml:file_id>22111833</oml:file_id>  <oml:default_target_attribute>gt_compressor_decay_state_coefficient</oml:default_target_attribute>    <oml:ignore_attribute>gt_turbine_decay_state_coefficient</oml:ignore_attribute>    <oml:citation>Dua, D. and Graff, C. (2019). UCI Machine Learning Repository [http://archive.ics.uci.edu/ml]. Irvine, CA: University of California, School of Information and Computer Science. 
+A. Coraddu, L. Oneto, A. Ghio, S. Savio, D. Anguita, M. Figari, Machine Learning Approaches for Improving Condition?Based Maintenance of Naval Propulsion Plants, Journal of Engineering for the Maritime Environment, 2014, DOI: 10.1177/1475090214540874, (In Press)</oml:citation>  <oml:tag>Agriculture</oml:tag><oml:tag>Machine Learning</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>https://archive.ics.uci.edu/ml/datasets/condition+based+maintenance+of+naval+propulsion+plants</oml:original_data_url>  <oml:paper_url>https://journals.sagepub.com/doi/abs/10.1177/1475090214540874</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0004/44969/dataset_44969.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2022-12-22 16:13:08</oml:processing_date>      <oml:md5_checksum>27484a3481ad60205656f6b6b191996b</oml:md5_checksum>
+</oml:data_set_description>

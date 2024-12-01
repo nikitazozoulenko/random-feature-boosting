@@ -1,0 +1,31 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>44976</oml:id>
+  <oml:name>sarcos</oml:name>
+  <oml:version>9</oml:version>
+  <oml:description>**Data Description**
+
+Within robotics, inverse dynamics algorithms are used to calculate the torques that a robot's motors must deliver to make the robot's end-point move in the way prescribed by its current task. More about [inverse dynamics][1].
+
+[1]: &lt;https://en.wikipedia.org/wiki/Inverse_dynamics&gt;
+
+The data set consists of 	48933 data points, collected at 100Hz from the actual robot performing various rhythmic and discrete movement tasks (this corresponds to 7.5 minutes of data collection).
+
+Note that this version of the dataset contains both the train and test data from the original dataset, which includes many duplicates.
+
+The task is to map from a 21-dimensional input space (7 joint positions, 7 joint velocities, 7 joint accelerations) to the corresponding 7 joint torques.
+
+This version of the dataset includes only the training set of the original dataset, as the test dataset contains almost exclusively duplicates from the training data.
+
+**Attribute Description**
+
+1. *V[1-7]* - 7 joint positions
+2. *V[8-14]* - 7 joint velocities
+3. *V[15-21]* - 7 joint accelerations
+4. *V[22-28]* - 7 joint torques, target variables, take one (*V22*) as target feature, ignore others as alternate target features</oml:description>
+  <oml:description_version>3</oml:description_version>
+  <oml:format>arff</oml:format>
+        <oml:upload_date>2022-12-22T16:15:09</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/22111840/sarcos.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0004/44976/dataset_44976.pq</oml:parquet_url>  <oml:file_id>22111840</oml:file_id>  <oml:default_target_attribute>V22</oml:default_target_attribute>    <oml:ignore_attribute>V23</oml:ignore_attribute><oml:ignore_attribute>V24</oml:ignore_attribute><oml:ignore_attribute>V25</oml:ignore_attribute><oml:ignore_attribute>V26</oml:ignore_attribute><oml:ignore_attribute>V27</oml:ignore_attribute><oml:ignore_attribute>V28</oml:ignore_attribute>      <oml:tag>Machine Learning</oml:tag><oml:tag>Sociology</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>http://gaussianprocess.org/gpml/data/</oml:original_data_url>  <oml:paper_url>https://www.researchgate.net/publication/2458951_Locally_Weighted_Projection_Regression_An_On_Algorithm_for_Incremental_Real_Time_Learning_in_High_Dimensional_Space</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0004/44976/dataset_44976.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2022-12-22 16:15:29</oml:processing_date>      <oml:md5_checksum>545e4913cdb8a638aa726af75381bd30</oml:md5_checksum>
+</oml:data_set_description>

@@ -1,0 +1,30 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>44973</oml:id>
+  <oml:name>grid_stability</oml:name>
+  <oml:version>7</oml:version>
+  <oml:description>**Data Description**
+
+The local stability analysis of the 4-node star system (electricity producer is in the center) implementing Decentral Smart Grid Control concept was performed.
+
+This dataset contains simulations regarding electrical grid stability. The model is composed of a generator model and an economic model.
+
+The analysis is performed for different sets of input values. Several input values are kept the same: averaging time - 2s, coupling strength - 8s^-2, damping - 0.1s^-1.
+
+The goal is to estimate the stability of the system.
+
+**Attribute Description**
+
+14 features describing the system:
+
+1. *tau[1-4]* - reaction time of participant (real from the range [0.5,10]s), tau1 - value for electricity producer
+2. *p[1-4]* - nominal power consumed(negative) / produced(positive)(real). For consumers from the range [-0.5,-2]s^-2; p1 = abs(p2 + p3 + p4)
+3. *g[1-4]* - coefficient (gamma) proportional to price elasticity (real from the range [0.05,1]s^-1), g1 - the value for electricity producer
+4. *stab* - the maximal real part of the characteristic equation root (if positive - the system is linearly unstable), target feature
+5. *stabf* - the stability label of the system (categorical: stable/unstable), alternate target feature for a classification task</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>arff</oml:format>
+        <oml:upload_date>2022-12-22T16:13:26</oml:upload_date>
+    <oml:licence>CC BY 4.0</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/22111837/grid_stability.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0004/44973/dataset_44973.pq</oml:parquet_url>  <oml:file_id>22111837</oml:file_id>  <oml:default_target_attribute>stab</oml:default_target_attribute>    <oml:ignore_attribute>stabf</oml:ignore_attribute>    <oml:citation>Dua, D. and Graff, C. (2019). UCI Machine Learning Repository [http://archive.ics.uci.edu/ml]. Irvine, CA: University of California, School of Information and Computer Science.</oml:citation>  <oml:tag>Machine Learning</oml:tag><oml:tag>Physical Sciences</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>https://archive.ics.uci.edu/ml/datasets/Electrical+Grid+Stability+Simulated+Data+</oml:original_data_url>  <oml:paper_url>https://doi.org/10.1109/SmartGridComm.2018.8587498</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0004/44973/dataset_44973.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2022-12-22 16:13:32</oml:processing_date>      <oml:md5_checksum>00e8b2c1d077474945d1604a6196c496</oml:md5_checksum>
+</oml:data_set_description>
