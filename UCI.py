@@ -11,7 +11,8 @@ from torch import Tensor
 from ucimlrepo import fetch_ucirepo 
 
 from optuna_kfoldCV import evaluate_pytorch_model_kfoldcv, evaluate_dataset_with_model
-from models.models import GreedyRandFeatBoostRegression, GradientRandFeatBoostReg, RidgeModule, End2EndMLPResNet
+from models.models import End2EndMLPResNet
+from models.models import GradientRFBoostRegressor, GreedyRFBoostRegressor, GreedyRFBoostRegressor_ScalarDiagDelta
 from regression_param_specs import evaluate_Ridge
 
 
@@ -111,80 +112,80 @@ def pytorch_load_yearpredictionmsd(device='cpu'):
 ######################################################  V
 
 
-def get_GradientRFBoost_eval_fun(
-        n_layers: int,
-        feature_type: Literal["dense", "SWIM"] = "SWIM",
-        upscale : Literal["dense", "SWIM"] = "dense",
-        ):
-    """Returns a function that evaluates the GradientRFBoost model
-    with the specified number of layers"""
-    def evaluate_GRFBoost(
-            X: Tensor,
-            y: Tensor,
-            k_folds: int,
-            cv_seed: int,
-            regression_or_classification: str,
-            n_optuna_trials: int,
-            device: Literal["cpu", "cuda"],
-            ):
-        ModelClass = GradientRandFeatBoostReg
-        get_optuna_params = lambda trial : {
-            "out_dim": trial.suggest_categorical("out_dim", [y.size(1)]),               # Fixed value
-            "n_layers": trial.suggest_categorical("n_layers", [n_layers]),              # Fixed value
-            "feature_type": trial.suggest_categorical("feature_type", [feature_type]),  # Fixed value
-            "upscale": trial.suggest_categorical("upscale", [upscale]),                 # Fixed value
+# def get_GradientRFBoost_eval_fun(
+#         n_layers: int,
+#         feature_type: Literal["dense", "SWIM"] = "SWIM",
+#         upscale : Literal["dense", "SWIM"] = "dense",
+#         ):
+#     """Returns a function that evaluates the GradientRFBoost model
+#     with the specified number of layers"""
+#     def evaluate_GRFBoost(
+#             X: Tensor,
+#             y: Tensor,
+#             k_folds: int,
+#             cv_seed: int,
+#             regression_or_classification: str,
+#             n_optuna_trials: int,
+#             device: Literal["cpu", "cuda"],
+#             ):
+#         ModelClass = GradientRandFeatBoostReg
+#         get_optuna_params = lambda trial : {
+#             "out_dim": trial.suggest_categorical("out_dim", [y.size(1)]),               # Fixed value
+#             "n_layers": trial.suggest_categorical("n_layers", [n_layers]),              # Fixed value
+#             "feature_type": trial.suggest_categorical("feature_type", [feature_type]),  # Fixed value
+#             "upscale": trial.suggest_categorical("upscale", [upscale]),                 # Fixed value
 
-            "hidden_dim": trial.suggest_int("hidden_dim", 16, 144, step=32),
-            "randfeat_xt_dim": trial.suggest_int("randfeat_xt_dim", 128, 512, step=128),
-            "randfeat_x0_dim": trial.suggest_int("randfeat_x0_dim", 128, 512, step=128),
-            "boost_lr": trial.suggest_float("boost_lr", 0.7, 1.0, step=0.1),
-        }
+#             "hidden_dim": trial.suggest_int("hidden_dim", 16, 144, step=32),
+#             "randfeat_xt_dim": trial.suggest_int("randfeat_xt_dim", 128, 512, step=128),
+#             "randfeat_x0_dim": trial.suggest_int("randfeat_x0_dim", 128, 512, step=128),
+#             "boost_lr": trial.suggest_float("boost_lr", 0.7, 1.0, step=0.1),
+#         }
 
-        return evaluate_pytorch_model_kfoldcv(
-            ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
-            regression_or_classification, n_optuna_trials, device,
-        )
-    return evaluate_GRFBoost
+#         return evaluate_pytorch_model_kfoldcv(
+#             ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
+#             regression_or_classification, n_optuna_trials, device,
+#         )
+#     return evaluate_GRFBoost
 
 
 
-def get_GreedyRFBoost_eval_fun(
-        n_layers: int,
-        feature_type: Literal["dense", "SWIM"] = "SWIM",
-        sandwich_solver: Literal["scalar", "diag", "dense"] = "dense",
-        upscale: Literal["dense", "SWIM", "identity"] = "dense",
-        ):
-    """Returns a function that evaluates the GreedyRFBoost model
-    with the specified number of layers"""
-    def evaluate_GreedyRFBoost(
-            X: Tensor,
-            y: Tensor,
-            k_folds: int,
-            cv_seed: int,
-            regression_or_classification: str,
-            n_optuna_trials: int,
-            device: Literal["cpu", "cuda"],
-            ):
+# def get_GreedyRFBoost_eval_fun(
+#         n_layers: int,
+#         feature_type: Literal["dense", "SWIM"] = "SWIM",
+#         sandwich_solver: Literal["scalar", "diag", "dense"] = "dense",
+#         upscale: Literal["dense", "SWIM", "identity"] = "dense",
+#         ):
+#     """Returns a function that evaluates the GreedyRFBoost model
+#     with the specified number of layers"""
+#     def evaluate_GreedyRFBoost(
+#             X: Tensor,
+#             y: Tensor,
+#             k_folds: int,
+#             cv_seed: int,
+#             regression_or_classification: str,
+#             n_optuna_trials: int,
+#             device: Literal["cpu", "cuda"],
+#             ):
         
-        ModelClass = GreedyRandFeatBoostRegression
-        get_optuna_params = lambda trial : {
-            "out_dim": trial.suggest_categorical("out_dim", [y.size(1)]),  # Fixed value
-            "n_layers": trial.suggest_categorical("n_layers", [n_layers]),         # Fixed value
-            "feature_type": trial.suggest_categorical("feature_type", [feature_type]), # Fixed value
-            "sandwich_solver": trial.suggest_categorical("sandwich_solver", [sandwich_solver]), # Fixed value
-            "upscale": trial.suggest_categorical("upscale", [upscale]), # Fixed value
+#         ModelClass = GreedyRandFeatBoostRegression
+#         get_optuna_params = lambda trial : {
+#             "out_dim": trial.suggest_categorical("out_dim", [y.size(1)]),  # Fixed value
+#             "n_layers": trial.suggest_categorical("n_layers", [n_layers]),         # Fixed value
+#             "feature_type": trial.suggest_categorical("feature_type", [feature_type]), # Fixed value
+#             "sandwich_solver": trial.suggest_categorical("sandwich_solver", [sandwich_solver]), # Fixed value
+#             "upscale": trial.suggest_categorical("upscale", [upscale]), # Fixed value
 
-            "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
-            "bottleneck_dim": trial.suggest_int("bottleneck_dim", 128, 512, log=True) if sandwich_solver=="dense" else trial.suggest_categorical("bottleneck_dim", [None]),
-            "l2_reg": trial.suggest_float("l2_reg", 1e-6, 0.1, log=True),
-            "boost_lr": trial.suggest_float("boost_lr", 0.5, 1.0, log=True),
-        }
+#             "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
+#             "bottleneck_dim": trial.suggest_int("bottleneck_dim", 128, 512, log=True) if sandwich_solver=="dense" else trial.suggest_categorical("bottleneck_dim", [None]),
+#             "l2_reg": trial.suggest_float("l2_reg", 1e-6, 0.1, log=True),
+#             "boost_lr": trial.suggest_float("boost_lr", 0.5, 1.0, log=True),
+#         }
 
-        return evaluate_pytorch_model_kfoldcv(
-            ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
-            regression_or_classification, n_optuna_trials, device,
-        )
-    return evaluate_GreedyRFBoost
+#         return evaluate_pytorch_model_kfoldcv(
+#             ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
+#             regression_or_classification, n_optuna_trials, device,
+#         )
+#     return evaluate_GreedyRFBoost
 
 
 

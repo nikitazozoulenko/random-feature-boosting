@@ -1,0 +1,42 @@
+{
+    "44959": {
+        "GreedyRFBoostScalar": {
+            "score_train": [
+                0.2794446647167206,
+                0.4155596196651459
+            ],
+            "score_test": [
+                0.4059165120124817,
+                0.41701540350914
+            ],
+            "t_fit": [
+                0.09041408900156966,
+                0.031744355997943785
+            ],
+            "t_inference": [
+                0.00821064499905333,
+                0.003563268001016695
+            ],
+            "hyperparams": [
+                {
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "sandwich_solver": "scalar",
+                    "n_layers": 3,
+                    "hidden_dim": 444,
+                    "boost_lr": 0.7,
+                    "l2_reg_sandwich": 6.646307917583074e-05
+                },
+                {
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "sandwich_solver": "scalar",
+                    "n_layers": 9,
+                    "hidden_dim": 78,
+                    "boost_lr": 0.6,
+                    "l2_reg_sandwich": 8.386295365219541e-05
+                }
+            ]
+        }
+    }
+}

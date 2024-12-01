@@ -95,7 +95,7 @@ def pytorch_load_openml_dataset(
 ###################################################################  V
 
 
-def get_pytorch_optuna_cv_rmse_objective(
+def get_pytorch_optuna_cv_objective(
         trial,
         ModelClass: Callable,
         get_optuna_params: Callable,
@@ -115,6 +115,9 @@ def get_pytorch_optuna_cv_rmse_objective(
         X_inner_train, X_inner_valid = X_train[inner_train_idx], X_train[inner_valid_idx]
         y_inner_train, y_inner_valid = y_train[inner_train_idx], y_train[inner_valid_idx]
 
+        np.random.seed(cv_seed)
+        torch.manual_seed(cv_seed)
+        torch.cuda.manual_seed(cv_seed)
         model = ModelClass(**params)
         model.fit(X_inner_train, y_inner_train)
 
@@ -153,13 +156,16 @@ def evaluate_pytorch_model_single_fold(
     """
     #hyperparameter tuning with Optuna
     study = optuna.create_study(direction="minimize", )
-    objective = lambda trial: get_pytorch_optuna_cv_rmse_objective(
+    objective = lambda trial: get_pytorch_optuna_cv_objective(
         trial, ModelClass, get_optuna_params, X_train, y_train, 
         k_folds, cv_seed, regression_or_classification
         )
     study.optimize(objective, n_trials=n_optuna_trials)
 
     #fit model with optimal hyperparams
+    np.random.seed(cv_seed)
+    torch.manual_seed(cv_seed)
+    torch.cuda.manual_seed(cv_seed)
     t0 = time.perf_counter()
     model = ModelClass(**study.best_params).to(device)
     model.fit(X_train, y_train)
