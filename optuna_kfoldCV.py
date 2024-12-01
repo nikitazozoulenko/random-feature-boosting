@@ -14,9 +14,7 @@ from torch import Tensor, tensor
 import pandas as pd
 import openml
 import optuna
-from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import KFold
-import xgboost as xgb
 
 
 #########################  |
