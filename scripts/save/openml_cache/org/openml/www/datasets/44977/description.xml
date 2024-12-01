@@ -1,0 +1,33 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>44977</oml:id>
+  <oml:name>california_housing</oml:name>
+  <oml:version>7</oml:version>
+  <oml:description>**Data Description**
+
+Information on the variables was collected using all the block groups in California from the 1990 Census. In this sample a block group on average includes 1425.5 individuals living in a geographically compact area. Naturally, the geographical area included varies inversely with the population density. Distances among the centroids of each block group were computed as measured in latitude and longitude. All the block groups reporting zero entries for the independent and dependent variables were excluded. The final data contained 20,640 observations on 9 variables. 
+
+Each row in the dataset represents one census block group. A block group is the smallest geographical unit for which the U.S. Census Bureau publishes sample data (a block group typically has a population of 600 to 3,000 people).
+
+The goal of the dataset is to predict the median house value. The original dataset description advised to predict the value using logarithmic transform.
+
+
+**Attribute Description**
+
+Census block group describing features:
+
+1. *longitude* 
+2. *latitude*
+3. *housingMedianAge*
+4. *totalRooms*
+5. *totalBedrooms*
+6. *population*
+7. *households*
+8. *medianIncome*
+9. *medianHouseValue* - target feature</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>arff</oml:format>
+        <oml:upload_date>2022-12-22T16:15:15</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/22111841/california_housing.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0004/44977/dataset_44977.pq</oml:parquet_url>  <oml:file_id>22111841</oml:file_id>  <oml:default_target_attribute>medianHouseValue</oml:default_target_attribute>          <oml:tag>Statistics</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>https://www.dcc.fc.up.pt/~ltorgo/Regression/cal_housing.html</oml:original_data_url>  <oml:paper_url>https://econpapers.repec.org/RePEc:eee:stapro:v:33:y:1997:i:3:p:291-297</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0004/44977/dataset_44977.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2022-12-22 16:15:20</oml:processing_date>      <oml:md5_checksum>56bc58068c029c331ac77c474307be5e</oml:md5_checksum>
+</oml:data_set_description>

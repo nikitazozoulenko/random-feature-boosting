@@ -1,0 +1,20 @@
+
+If the anaconda3/personal module is the only one you're using in your jobscripts, then you should consider moving to our newer cluster - CX3 Phase 2.
+It provides a number of improvements as well as new GPU's (NVIDIA L40S's). It runs off of the RDS, meaning all your work will remain as is.
+All you need to do is log in to the new cluster:
+https://icl-rcs-user-guide.readthedocs.io/en/latest/hpc/pilot/cx3-phase2/
+https://icl-rcs-user-guide.readthedocs.io/en/latest/hpc/pilot/cx3-phase2/#python-and-conda-environments
+
+As always, if you have any questions, please raise a ticket with us here:
+https://www.imperial.ac.uk/admin-services/ict/self-service/research-support/rcs/get-support/contact-us/
+
+[I 2024-12-01 18:01:32,422] A new study created in memory with name: no-name-65665116-7623-4086-9643-41cf9947ab5d
+/rds/general/user/nz423/home/anaconda3/envs/pytorch_env/lib/python3.11/site-packages/optuna/distributions.py:693: UserWarning: The distribution is specified by [0.3, 1.001] and step=0.1, but the range is not divisible by `step`. It will be replaced by [0.3, 1.0].
+  warnings.warn(
+[I 2024-12-01 18:01:35,874] Trial 0 finished with value: 0.33825520873069764 and parameters: {'feature_type': 'SWIM', 'upscale': 'dense', 'n_layers': 5, 'hidden_dim': 112, 'randfeat_xt_dim': 128, 'randfeat_x0_dim': 256, 'boost_lr': 0.3}. Best is trial 0 with value: 0.33825520873069764.
+[I 2024-12-01 18:01:38,404] Trial 1 finished with value: 0.34289316534996034 and parameters: {'feature_type': 'SWIM', 'upscale': 'dense', 'n_layers': 3, 'hidden_dim': 48, 'randfeat_xt_dim': 512, 'randfeat_x0_dim': 128, 'boost_lr': 0.8}. Best is trial 0 with value: 0.33825520873069764.
+[I 2024-12-01 18:01:45,974] Trial 2 finished with value: 0.31694788932800294 and parameters: {'feature_type': 'SWIM', 'upscale': 'dense', 'n_layers': 2, 'hidden_dim': 112, 'randfeat_xt_dim': 512, 'randfeat_x0_dim': 512, 'boost_lr': 0.4}. Best is trial 2 with value: 0.31694788932800294.
+[I 2024-12-01 18:01:47,561] Trial 3 finished with value: 0.35421915650367736 and parameters: {'feature_type': 'SWIM', 'upscale': 'dense', 'n_layers': 8, 'hidden_dim': 80, 'randfeat_xt_dim': 128, 'randfeat_x0_dim': 128, 'boost_lr': 0.9000000000000001}. Best is trial 2 with value: 0.31694788932800294.
+[I 2024-12-01 18:01:55,340] Trial 4 finished with value: 0.32056986093521117 and parameters: {'feature_type': 'SWIM', 'upscale': 'dense', 'n_layers': 10, 'hidden_dim': 144, 'randfeat_xt_dim': 128, 'randfeat_x0_dim': 384, 'boost_lr': 0.5}. Best is trial 2 with value: 0.31694788932800294.
+[I 2024-12-01 18:02:05,068] Trial 5 finished with value: 0.29602189660072326 and parameters: {'feature_type': 'SWIM', 'upscale': 'dense', 'n_layers': 8, 'hidden_dim': 16, 'randfeat_xt_dim': 512, 'randfeat_x0_dim': 256, 'boost_lr': 0.5}. Best is trial 5 with value: 0.29602189660072326.
+[I 2024-12-01 18:02:26,105] Trial 6 finished with value: 0.3314337909221649 and parameters: {'feature_type': 'SWIM', 'upscale': 'dense', 'n_layers': 6, 'hidden_dim': 48, 'randfeat_xt_dim': 512, 'randfeat_x0_dim': 512, 'boost_lr': 1.0}. Best is trial 5 with value: 0.29602189660072326.

@@ -1,0 +1,28 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>44981</oml:id>
+  <oml:name>pumadyn32nh</oml:name>
+  <oml:version>2</oml:version>
+  <oml:description>**Data Description**
+
+A realistic simulation of the dynamics of a Puma 560 robot arm. The task in this dataset is to predict the angular acceleration of one of the robot arm's links. The task is nonlinear and has high noise.
+
+The similator got as input the angular positions, velocities and torques and other dynamic parameters of the Puma arm.
+
+The goal was to predict the acceleration of link 6 *thetad6*.
+
+**Attribute Description**
+
+1. *theta[1-6]* - angular positions of links 1 to 6
+2. *thetad[1-6]* - angular velocities of links 1 to 6
+3. *tau[1-5]* - torques at joints 1 to 5
+4. *dm[1-5]* - change in mass of links 1 to 5
+5. *da[1-5]* - change in length of links 1 to 5
+6. *db[1-5]* - change in viscous friction of links 1 - 5
+7. *thetadd6* - acceleration of link 6, target feature</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>arff</oml:format>
+        <oml:upload_date>2022-12-22T16:15:45</oml:upload_date>
+    <oml:licence>Public</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/22111845/pumadyn32nh.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0004/44981/dataset_44981.pq</oml:parquet_url>  <oml:file_id>22111845</oml:file_id>  <oml:default_target_attribute>thetadd6</oml:default_target_attribute>        <oml:citation>http://www.cs.toronto.edu/~delve/copyright.html</oml:citation>  <oml:tag>Demographics</oml:tag><oml:tag>History</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>https://ftp.cs.toronto.edu/pub/neuron/delve/data/tarfiles/pumadyn-family</oml:original_data_url>  <oml:paper_url>Link</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0004/44981/dataset_44981.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2022-12-22 16:17:10</oml:processing_date>      <oml:md5_checksum>79deeed4ec85cfd97ad9c98eeaed72d8</oml:md5_checksum>
+</oml:data_set_description>

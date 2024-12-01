@@ -1,0 +1,25 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>44975</oml:id>
+  <oml:name>wave_energy</oml:name>
+  <oml:version>6</oml:version>
+  <oml:description>**Data Description**
+
+This data set consists of positions and absorbed power outputs of wave energy converters (WECs) in four real wave scenarios from the southern coast of Australia.
+
+The data is obtained from an optimization method (blackbox optimization) with the goal of finding the optimal buoys placement.
+
+Each instance represents wave energy returns for different placements of 16 buoys.
+
+**Attribute Description**
+
+1. *x[1-16]* - WECs positions (0-566)
+2. *y[1-16]* - WECs positions (0-566)
+3. *energy[1-16]* - WECs absorbed power (should be ignored if *energy_total* is considered as the target variable)
+4. *energy_total* - total power output of the farm: Powerall, target feature</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>arff</oml:format>
+        <oml:upload_date>2022-12-22T16:14:43</oml:upload_date>
+    <oml:licence>CC BY 4.0</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/22111839/wave_energy.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0004/44975/dataset_44975.pq</oml:parquet_url>  <oml:file_id>22111839</oml:file_id>  <oml:default_target_attribute>energy_total</oml:default_target_attribute>        <oml:citation>Dua, D. and Graff, C. (2019). UCI Machine Learning Repository [http://archive.ics.uci.edu/ml]. Irvine, CA: University of California, School of Information and Computer Science.</oml:citation>  <oml:tag>Machine Learning</oml:tag><oml:tag>Medicine</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>https://archive.ics.uci.edu/ml/datasets/Wave+Energy+Converters</oml:original_data_url>    <oml:minio_url>https://openml1.win.tue.nl/datasets/0004/44975/dataset_44975.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2022-12-22 16:15:11</oml:processing_date>      <oml:md5_checksum>762a4638b1019db2db361d1c018e3e92</oml:md5_checksum>
+</oml:data_set_description>

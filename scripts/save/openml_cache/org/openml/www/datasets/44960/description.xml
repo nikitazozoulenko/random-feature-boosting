@@ -1,0 +1,31 @@
+<oml:data_set_description xmlns:oml="http://openml.org/openml">
+  <oml:id>44960</oml:id>
+  <oml:name>energy_efficiency</oml:name>
+  <oml:version>9</oml:version>
+  <oml:description>**Data Description**
+
+This dataset looked into assessing the heating load and cooling load requirements of buildings (that is, energy efficiency) as a function of building parameters.
+Energy analysis is performed using 12 different building shapes simulated in Ecotect. The buildings differ with respect to the glazing area, the glazing area distribution, and the orientation, amongst other parameters. Various settings as functions of the afore-mentioned characteristics are simulated to obtain 768 building shapes (number of observations in the dataset).
+
+**Attribute Description**
+
+All features describe different properties for the building.
+
+1. *relative_compactness*
+2. *surface_area*
+3. *wall_area*
+4. *roof_area*
+5. *overall_height*
+6. *orientation*
+7. *glazing_area*
+8. *glazing_area_distribution*
+9. *heating_load* - one possible option for target feature
+10. *cooling_load* - one possible option for target feature</oml:description>
+  <oml:description_version>1</oml:description_version>
+  <oml:format>arff</oml:format>
+        <oml:upload_date>2022-12-22T16:11:13</oml:upload_date>
+    <oml:licence>CC BY 4.0</oml:licence>  <oml:url>https://api.openml.org/data/v1/download/22111824/energy_efficiency.arff</oml:url>
+  <oml:parquet_url>https://openml1.win.tue.nl/datasets/0004/44960/dataset_44960.pq</oml:parquet_url>  <oml:file_id>22111824</oml:file_id>  <oml:default_target_attribute>heating_load</oml:default_target_attribute>    <oml:ignore_attribute>cooling_load</oml:ignore_attribute>    <oml:citation>Dua, D. and Graff, C. (2019). UCI Machine Learning Repository [http://archive.ics.uci.edu/ml]. Irvine, CA: University of California, School of Information and Computer Science. 
+A. Tsanas, A. Xifara: 'Accurate quantitative estimation of energy performance of residential buildings using statistical machine learning tools', Energy and Buildings, Vol. 49, pp. 560-567, 2012</oml:citation>  <oml:tag>Machine Learning</oml:tag>  <oml:visibility>public</oml:visibility>  <oml:original_data_url>https://archive.ics.uci.edu/ml/datasets/energy+efficiency</oml:original_data_url>  <oml:paper_url>https://doi.org/10.1016/j.enbuild.2012.03.003</oml:paper_url>  <oml:minio_url>https://openml1.win.tue.nl/datasets/0004/44960/dataset_44960.pq</oml:minio_url>  <oml:status>active</oml:status>
+  <oml:processing_date>2022-12-22 16:11:22</oml:processing_date>      <oml:md5_checksum>9e361531fc8e672174ddb393144a60c9</oml:md5_checksum>
+</oml:data_set_description>
