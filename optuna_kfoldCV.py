@@ -16,11 +16,12 @@ import openml
 import optuna
 from sklearn.model_selection import KFold
 
+# Set OpenML cache directory to a location with write permissions
+os.environ['OPENML_CONFIG_DIR'] = 'save/openml_cache'
 
 #########################  |
 ##### Dataset Code  #####  |
 #########################  V
-
 
 openML_reg_ids_noCat = [ 
     44957,44959,44960,44963,44964,44965,44969,44970,
