@@ -16,8 +16,11 @@ import openml
 import optuna
 from sklearn.model_selection import KFold
 
+
 # Set OpenML cache directory to a location with write permissions
-os.environ['OPENML_CONFIG_DIR'] = 'save/openml_cache'
+cache_path = os.path.abspath('save/openml_cache')
+openml.config.set_root_cache_directory(cache_path)
+
 
 #########################  |
 ##### Dataset Code  #####  |
