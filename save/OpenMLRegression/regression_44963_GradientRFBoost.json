@@ -1,0 +1,42 @@
+{
+    "44963": {
+        "GradientRFBoost": {
+            "score_train": [
+                0.7276771068572998,
+                0.7271102666854858
+            ],
+            "score_test": [
+                0.7439403533935547,
+                0.7389704585075378
+            ],
+            "t_fit": [
+                2.1957937179977307,
+                2.416662314997666
+            ],
+            "t_inference": [
+                0.7515421200005221,
+                0.759312961003161
+            ],
+            "hyperparams": [
+                {
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "n_layers": 7,
+                    "hidden_dim": 48,
+                    "randfeat_xt_dim": 256,
+                    "randfeat_x0_dim": 256,
+                    "boost_lr": 0.3
+                },
+                {
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "n_layers": 8,
+                    "hidden_dim": 80,
+                    "randfeat_xt_dim": 128,
+                    "randfeat_x0_dim": 256,
+                    "boost_lr": 1.0
+                }
+            ]
+        }
+    }
+}

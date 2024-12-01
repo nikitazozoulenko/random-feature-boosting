@@ -653,9 +653,13 @@ class End2EndMLPResNet(FittableModule):
             shuffle=True, 
         )
 
+        print("X.size(0)", X.size(0))
+
         # training loop
         for epoch in tqdm(range(self.n_epochs)):
             for batch_X, batch_y in loader:
+                if batch_X.size(0) < self.batch_size:
+                    continue  # Skip smaller batches since i sometimes have dataset size of 257 leading to training errors with batch norm
                 self.optimizer.zero_grad()
                 outputs = self(batch_X)
                 loss = self.loss(outputs, batch_y)
@@ -685,31 +689,126 @@ class End2EndMLPResNet(FittableModule):
 ###################################################
 
 
-class GreedyRandFeatBoostRegression(FittableModule):
+
+class GreedyRFBoostRegressor(FittableModule):
     def __init__(self, 
                  hidden_dim: int = 128,
-                 bottleneck_dim: Optional[int] = None, #if None, use hidden_dim
-                 out_dim: int = 1,
+                 randfeat_xt_dim: int = 128,
+                 randfeat_x0_dim: int = 128,
                  n_layers: int = 5,
                  activation: nn.Module = nn.Tanh(),
-                 l2_reg: float = 0.01,
-                 feature_type = "SWIM", # "dense", identity
+                 l2_reg_sandwich: float = 10.0,
+                 feature_type = "SWIM", # "dense"
                  boost_lr: float = 1.0,
-                 upscale: Optional[str] = "dense",
-                 sandwich_solver : Literal["scalar", "diag", "dense"] = "dense"
-                 #TODO add argument which specifies f(x_t) vs f(x_t, x_0)
+                 upscale: Literal["dense", "SWIM", "identity"] = "dense",
                  ):
-        super(GreedyRandFeatBoostRegression, self).__init__()
-        if bottleneck_dim is None:
-            self.bottleneck_dim = hidden_dim
-        else:
-            self.bottleneck_dim = bottleneck_dim
-
+        """
+        Tabular Greedy Random Feaute Boosting.
+        Concatenates two streams of random features [f(Xt), f(X0)].
+        Assumes dense sandwich solver for Delta.
+        """
+        super(GreedyRFBoostRegressor, self).__init__()
         self.hidden_dim = hidden_dim
-        self.out_dim = out_dim
+        self.randfeat_xt_dim = randfeat_xt_dim
+        self.randfeat_x0_dim = randfeat_x0_dim
         self.n_layers = n_layers
         self.activation = activation
-        self.l2_reg = l2_reg
+        self.l2_reg_sandwich = l2_reg_sandwich
+        self.feature_type = feature_type
+        self.boost_lr = boost_lr
+        self.upscale = upscale
+
+
+    def fit_transform(self, X: Tensor, y: Tensor):
+        with torch.no_grad():
+            X0 = X
+            #optional upscale
+            if self.upscale == "dense":
+                self.upscale_fun = create_layer(self.upscale, X.shape[1], self.hidden_dim, None)
+                X = self.upscale_fun.fit_transform(X, y)
+            elif self.upscale == "SWIM":
+                self.upscale_fun = create_layer(self.upscale, X.shape[1], self.hidden_dim, self.activation)
+                X = self.upscale_fun.fit_transform(X, y)
+            elif self.upscale == "identity":
+                self.upscale_fun = Identity()
+                self.hidden_dim = X0.size(1)
+            else:
+                raise ValueError(f"Parameter not recoginized. Given: {self.upscale}")
+
+
+            # Create regressor W_0
+            W, b, alpha = fit_ridge_ALOOCV(X, y)
+            self.Ws = [W]
+            self.bs = [b]
+            self.layers_fxt = []
+            self.layers_fx0 = []
+            self.deltas = []
+
+            # Layerwise boosting
+            for t in range(self.n_layers):
+                # Step 1: Create random feature layer   
+                fxt_fun = create_layer(self.feature_type, self.hidden_dim, self.randfeat_xt_dim, self.activation)
+                fx0_fun = create_layer(self.feature_type, X0.size(1), self.randfeat_x0_dim, self.activation)
+                Fxt = fxt_fun.fit_transform(X, y)
+                Fx0 = fx0_fun.fit_transform(X0, y)
+                F = torch.cat([Fxt, Fx0], dim=1)
+
+                # Step 2: Greedily minimize R(W_t, Phi_t + Delta F)
+                R = y - X @ W - b # residual
+                Delta = sandwiched_LS_dense(R, W, F, self.l2_reg_sandwich)
+
+                # Step 3: Learn top level classifier W_t
+                X = X + self.boost_lr * F @ Delta
+                W, b, alpha = fit_ridge_ALOOCV(X, y)
+
+                #save
+                self.layers_fxt.append(fxt_fun)
+                self.layers_fx0.append(fx0_fun)
+                self.deltas.append(Delta)
+                self.Ws.append(W)
+                self.bs.append(b)
+
+            return X @ W + b
+
+
+    def forward(self, X: Tensor) -> Tensor:
+        with torch.no_grad():
+            #upscale
+            X0 = X
+            if self.upscale is not None:
+                X = self.upscale_fun(X)
+            # Boosting
+            for fxt_fun, fx0_fun, Delta in zip(self.layers_fxt, self.layers_fx0, self.deltas):
+                features = torch.cat([fxt_fun(X), fx0_fun(X0)], dim=1)
+                X = X + self.boost_lr * features @ Delta
+            # Top level regressor
+            return X @ self.Ws[-1] + self.bs[-1]
+
+
+
+
+
+class GreedyRFBoostRegressor_ScalarDiagDelta(FittableModule):
+    def __init__(self, 
+                 hidden_dim: int = 128,
+                 n_layers: int = 5,
+                 activation: nn.Module = nn.Tanh(),
+                 l2_reg_sandwich: float = 1,
+                 feature_type = "SWIM", # "dense"
+                 boost_lr: float = 1.0,
+                 upscale: Literal["dense", "SWIM", "identity"] = "dense",
+                 sandwich_solver: Literal["dense", "diag", "scalar"] = "diag",
+                 ):
+        """
+        Tabular Greedy Random Feaute Boosting.
+        One pathway for random features by concatenating the input f([Xt, X0]).
+        Supports dense, diagonal, and scalar sandwich solver for Delta.
+        """
+        super(GreedyRFBoostRegressor_ScalarDiagDelta, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.n_layers = n_layers
+        self.activation = activation
+        self.l2_reg_sandwich = l2_reg_sandwich
         self.feature_type = feature_type
         self.boost_lr = boost_lr
         self.upscale = upscale
@@ -720,47 +819,56 @@ class GreedyRandFeatBoostRegression(FittableModule):
         elif sandwich_solver == "diag":
             self.sandwich_solver = sandwiched_LS_diag
             self.XDelta_op = self.XDelta_diag
-            self.bottleneck_dim = hidden_dim
         elif sandwich_solver == "scalar":
             self.sandwich_solver = sandwiched_LS_scalar
             self.XDelta_op = self.XDelta_scalar
-            self.bottleneck_dim = hidden_dim
 
 
     def fit_transform(self, X: Tensor, y: Tensor):
-        X0 = X
         with torch.no_grad():
+            X0 = X
             #optional upscale
             if self.upscale == "dense":
-                self.upscale_fun = create_layer(self.upscale, X0.shape[1], self.hidden_dim, None)
+                self.upscale_fun = create_layer(self.upscale, X.shape[1], self.hidden_dim, None)
                 X = self.upscale_fun.fit_transform(X, y)
             elif self.upscale == "SWIM":
-                self.upscale_fun = create_layer(self.upscale, X0.shape[1], self.hidden_dim, self.activation)
+                self.upscale_fun = create_layer(self.upscale, X.shape[1], self.hidden_dim, self.activation)
                 X = self.upscale_fun.fit_transform(X, y)
+            elif self.upscale == "identity":
+                self.upscale_fun = Identity()
+                self.hidden_dim = X0.size(1)
+            else:
+                raise ValueError(f"Parameter not recoginized. Given: {self.upscale}")
+
 
             # Create regressor W_0
-            self.W, self.b, alpha = fit_ridge_ALOOCV(X, y)
+            W, b, alpha = fit_ridge_ALOOCV(X, y)
+            self.Ws = [W]
+            self.bs = [b]
             self.layers = []
             self.deltas = []
 
             # Layerwise boosting
             for t in range(self.n_layers):
-                # Step 1: Create random feature layer   
-                layer = create_layer(self.feature_type, self.hidden_dim, self.bottleneck_dim, self.activation)
-                F = layer.fit_transform(X, y)
-                self.layers.append(layer)
+                # Step 1: Create random feature layer
+                layer = create_layer(self.feature_type, X0.size(1) + self.hidden_dim, self.hidden_dim, self.activation)
+                F = layer.fit_transform(torch.cat([X, X0], dim=1), y)
 
                 # Step 2: Greedily minimize R(W_t, Phi_t + Delta F)
-                R = y - X @ self.W - self.b # residual
-                Delta = self.sandwich_solver(R, self.W, F, self.l2_reg)
-                self.deltas.append(Delta)
-                # print(t, "X norm", torch.norm(X), "Delta", Delta)
+                R = y - X @ W - b # residual
+                Delta = self.sandwich_solver(R, W, F, self.l2_reg_sandwich)
 
                 # Step 3: Learn top level classifier W_t
                 X = X + self.boost_lr * self.XDelta_op(F, Delta)
-                self.W, self.b, alpha = fit_ridge_ALOOCV(X, y)
+                W, b, alpha = fit_ridge_ALOOCV(X, y)
 
-            return X @ self.W + self.b
+                #save
+                self.layers.append(layer)
+                self.deltas.append(Delta)
+                self.Ws.append(W)
+                self.bs.append(b)
+
+            return X @ W + b
 
     @staticmethod
     def XDelta_scalar(X: Tensor, Delta: Tensor) -> Tensor:
@@ -776,25 +884,30 @@ class GreedyRandFeatBoostRegression(FittableModule):
 
     def forward(self, X: Tensor) -> Tensor:
         with torch.no_grad():
+            X0 = X
             #upscale
             if self.upscale is not None:
                 X = self.upscale_fun(X)
             # Boosting
             for layer, Delta in zip(self.layers, self.deltas):
-                X = X + self.boost_lr * self.XDelta_op(layer(X), Delta)
+                F =  layer(torch.cat([X, X0], dim=1))
+                X = X + self.boost_lr * self.XDelta_op(F, Delta)
             # Top level regressor
-            return X @ self.W + self.b
-
-        
+            return X @ self.Ws[-1] + self.bs[-1]
 
 
 
-class GradientRandFeatBoostReg(FittableModule):
+
+#####################################################
+#### random feature gradient boosting regression ####
+#####################################################
+
+
+class GradientRFBoostRegressor(FittableModule):
     def __init__(self, 
                  hidden_dim: int = 128,
                  randfeat_xt_dim: int = 128,
                  randfeat_x0_dim: int = 128,
-                 out_dim: int = 1,
                  n_layers: int = 5,
                  activation: nn.Module = nn.Tanh(),
                  #  l2_reg: float = 0.01,   #TODO ALOOCV or fixed l2_reg
@@ -802,11 +915,10 @@ class GradientRandFeatBoostReg(FittableModule):
                  boost_lr: float = 1.0,
                  upscale: Optional[str] = "dense",
                  ):
-        super(GradientRandFeatBoostReg, self).__init__()
+        super(GradientRFBoostRegressor, self).__init__()
         self.hidden_dim = hidden_dim
         self.randfeat_xt_dim = randfeat_xt_dim
         self.randfeat_x0_dim = randfeat_x0_dim
-        self.out_dim = out_dim
         self.n_layers = n_layers
         self.activation = activation
         # self.l2_reg = l2_reg
@@ -868,7 +980,6 @@ class GradientRandFeatBoostReg(FittableModule):
                 eps = 1e-5
                 linesearch = sandwiched_LS_scalar(r, W, Ghat, eps)
 
-
                 # Step 3: Learn top level classifier
                 X = X + self.boost_lr * linesearch * Ghat
                 W, b, _ = fit_ridge_ALOOCV(X, y) #TODO i might want to fix this.... not have ALOOCV
@@ -894,11 +1005,6 @@ class GradientRandFeatBoostReg(FittableModule):
                 features = torch.cat([fxt_fun(X), fx0_fun(X0)], dim=1)
                 X = X + self.boost_lr * (features @ Delta + Delta_b)
             return X @ self.Ws[-1] + self.bs[-1]
-        
-
-######################################################
-########## CONCAT fxt fx0 --- Regression #############
-######################################################
 
 
 

@@ -1,0 +1,50 @@
+{
+    "44963": {
+        "End2End": {
+            "score_train": [
+                0.7157023549079895,
+                0.7266854047775269
+            ],
+            "score_test": [
+                0.7323257923126221,
+                0.7304408550262451
+            ],
+            "t_fit": [
+                9.24197242399896,
+                3.7993149979993177
+            ],
+            "t_inference": [
+                0.17143531200053985,
+                0.057920950002881
+            ],
+            "hyperparams": [
+                {
+                    "in_dim": 9,
+                    "out_dim": 1,
+                    "loss": "mse",
+                    "n_blocks": 5,
+                    "hidden_dim": 32,
+                    "bottleneck_dim": 128,
+                    "lr": 0.00011598203640239141,
+                    "end_lr_factor": 0.05410847266029048,
+                    "n_epochs": 5,
+                    "weight_decay": 1.3945552576977549e-05,
+                    "batch_size": 96
+                },
+                {
+                    "in_dim": 9,
+                    "out_dim": 1,
+                    "loss": "mse",
+                    "n_blocks": 1,
+                    "hidden_dim": 128,
+                    "bottleneck_dim": 32,
+                    "lr": 0.00851681141506032,
+                    "end_lr_factor": 0.20866409340791778,
+                    "n_epochs": 6,
+                    "weight_decay": 0.0006822488321496438,
+                    "batch_size": 96
+                }
+            ]
+        }
+    }
+}

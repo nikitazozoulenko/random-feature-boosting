@@ -80,8 +80,8 @@ def sandwiched_LS_dense(
     N = X.size(0)
     # NOTE torch.linalg.eigh sometimes throws errors for cuda due to cuBLAS solver. date=2024
     U, SW, _ = torch.linalg.svd(W @ W.T, full_matrices=False) # shape (D, d), (d,)
-    V, SX, _ = torch.linalg.svd(X.T @ X / N, full_matrices=False) # shape (p, p), (p,)
+    V, SX, _ = torch.linalg.svd(X.T @ X, full_matrices=False) # shape (p, p), (p,)
     #Delta = (U.T @ W @ R.T @ (X/N) @ V) / (l2_reg + SW[:, None]*SX[None, :])
-    Delta = torch.linalg.multi_dot( (U.T, W, R.T, X, V) ) / (l2_reg + SW[:, None]*SX[None, :])
+    Delta = torch.linalg.multi_dot( (U.T, W, R.T, X, V) ) / (N*l2_reg + SW[:, None]*SX[None, :])
     Delta = U @ Delta @ V.T
     return Delta.T

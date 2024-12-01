@@ -7,7 +7,7 @@ from torch import Tensor
 def fit_ridge_ALOOCV(
         X: Tensor,
         y: Tensor,
-        alphas: List[float] = [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+        alphas: List[float] = [1e-5, 1e-4, 1e-3, 0.01, 0.1, 1],
         fit_intercept: bool = True
     ) -> Tuple[Tensor, float]:
     """
