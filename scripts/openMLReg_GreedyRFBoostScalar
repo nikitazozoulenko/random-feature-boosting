@@ -7,4 +7,4 @@ cd $PBS_O_WORKDIR
 module load anaconda3/personal
 source activate  pytorch_env
 
-!python regression_param_specs.py --models Ridge RidgeCV --save_dir /rds/general/user/nz423/home/random-feature-boosting/save/OpenMLRegression/ --n_optuna_trials 100 --device cuda --k_folds 5 --cv_seed 42 --save_experiments_individually
+python ../regression_param_specs.py --models GreedyRFBoostScalar --save_dir /rds/general/user/nz423/home/random-feature-boosting/save/OpenMLRegression/ --n_optuna_trials 100 --device cuda --k_folds 5 --cv_seed 42 --save_experiments_individually
