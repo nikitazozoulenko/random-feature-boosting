@@ -2,41 +2,41 @@
     "44957": {
         "GreedyRFBoostDense": {
             "score_train": [
-                0.6637056469917297,
-                0.6602538228034973
+                0.6093443632125854,
+                0.19471590220928192
             ],
             "score_test": [
-                0.6567500829696655,
-                0.6754136681556702
+                0.6035824418067932,
+                0.3308660387992859
             ],
             "t_fit": [
-                0.11665942500258097,
-                0.13401316400268115
+                0.25517842800036306,
+                0.40548577699883026
             ],
             "t_inference": [
-                0.010849563997908263,
-                0.016180523998627905
+                0.021393866998550948,
+                0.029263735999847995
             ],
             "hyperparams": [
                 {
                     "feature_type": "SWIM",
                     "upscale": "dense",
-                    "n_layers": 3,
-                    "hidden_dim": 112,
-                    "randfeat_xt_dim": 128,
-                    "randfeat_x0_dim": 512,
-                    "boost_lr": 0.7,
-                    "l2_reg_sandwich": 0.13823340482329663
+                    "n_layers": 5,
+                    "hidden_dim": 48,
+                    "randfeat_xt_dim": 384,
+                    "randfeat_x0_dim": 384,
+                    "boost_lr": 0.8,
+                    "l2_reg_sandwich": 3.7343493331130277
                 },
                 {
                     "feature_type": "SWIM",
                     "upscale": "dense",
-                    "n_layers": 3,
-                    "hidden_dim": 144,
-                    "randfeat_xt_dim": 512,
-                    "randfeat_x0_dim": 128,
-                    "boost_lr": 0.6000000000000001,
-                    "l2_reg_sandwich": 0.11387224870588103
+                    "n_layers": 6,
+                    "hidden_dim": 48,
+                    "randfeat_xt_dim": 384,
+                    "randfeat_x0_dim": 512,
+                    "boost_lr": 0.8,
+                    "l2_reg_sandwich": 0.006153558029540201
                 }
             ]
         }
