@@ -264,7 +264,6 @@ class RidgeModule(FittableModule):
         N = X.size(0)
         A = X_centered.T @ X_centered + self.l2_reg * N * torch.eye(X.size(1), dtype=X.dtype, device=X.device)
         B = X_centered.T @ y_centered
-        print(X.size(0), A)
         self.W = torch.linalg.solve(A, B)
         self.b = y_mean - (X_mean @ self.W)
         return self
@@ -652,8 +651,6 @@ class End2EndMLPResNet(FittableModule):
             batch_size=self.batch_size, 
             shuffle=True, 
         )
-
-        print("X.size(0)", X.size(0))
 
         # training loop
         for epoch in tqdm(range(self.n_epochs)):
