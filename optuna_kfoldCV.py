@@ -26,17 +26,17 @@ openml.config.set_root_cache_directory(cache_path)
 ##### Dataset Code  #####  |
 #########################  V
 
-openML_reg_ids_noCat = [ 
+openML_reg_ids_noCat = np.array([ 
     44957,44959,44960,44963,44964,44965,44969,44970,
     44971,44972,44973,44975,44976,44977,44978,44980,
     44981,44983,44994,45402
-    ]
-openML_cls_ids_nFeatsLess500_noCat_noMissing = [
+    ])
+openML_cls_ids_nFeatsLess500_noCat_noMissing = np.array([
     6,11,12,14,16,18,22,28,32,37,44,54,182,458,1049,
     1050,1063,1067,1068,1462,1464,1475,1487,1489,1494,
     1497,1501,1510,4538,23517,40499,40979,40982,40983,
     40984,40994,41027
-    ] # https://www.openml.org/search?type=study&study_type=task&id=99&sort=runs_included
+    ]) # https://www.openml.org/search?type=study&study_type=task&id=99&sort=runs_included
 
 
 def np_load_openml_dataset(
@@ -334,8 +334,7 @@ def run_all_openML_with_model(
         regression_or_classification: Literal["classification", "regression"],
         n_optuna_trials: int,
         device: Literal["cpu", "cuda"],
-        save_dir: Optional[str] = None,
-        save_experiments_individually: bool = False,
+        save_dir: str,
         ):
     """Evaluates a model on a list of OpenML datasets.
 
@@ -349,8 +348,7 @@ def run_all_openML_with_model(
         regression_or_classification (str): Either 'classification' or 'regression'
         n_optuna_trials (int): Number of Optuna trials for hyperparameter tuning.
         device (str): PyTorch device.
-        save_dir (Optional[str]): If not None, path to the save directory.
-        save_experiments_individually (bool): If True, saves each dataset experiment in a separate json file.
+        save_dir (str): Path to the save directory.
     """
     # Fetch and process each dataset
     experiments = {}
@@ -358,18 +356,13 @@ def run_all_openML_with_model(
         dataset_id = str(dataset_id)
         X, y = pytorch_load_openml_dataset(dataset_id, regression_or_classification)
         
-        save_each_dir = save_dir if save_experiments_individually else None
         json = evaluate_dataset_with_model(
             X, y, dataset_id, evaluate_model_func, name_model, k_folds, cv_seed, 
-            regression_or_classification, n_optuna_trials, device, save_each_dir
+            regression_or_classification, n_optuna_trials, device, save_dir
             )
         experiments[dataset_id] = json[dataset_id]
         print(f" {i+1}/{len(dataset_ids)} Processed dataset {dataset_id}")
     
-    # Save results
-    if save_dir is not None:
-        path = os.path.join(save_dir, f"{regression_or_classification}_{name_model}.json")
-        save_experiments_json(experiments, path)
     return experiments
 
 
