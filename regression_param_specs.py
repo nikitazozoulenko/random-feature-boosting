@@ -256,13 +256,13 @@ def parse_args():
         default=["GradientRFBoost", "GreedyRFBoost"], 
         help="List of model names to run."
     )
-    # parser.add_argument(
-    #     "--datasets", 
-    #     nargs='+', 
-    #     type=str, 
-    #     default=["forestfire", "abalone", "wine_quality", "yearpredictionmsd"], 
-    #     help="List of datasets to run."
-    # )
+    parser.add_argument(
+        "--dataset_indices", 
+        nargs='+', 
+        type=int, 
+        default=[i for i in range(len(openML_reg_ids_noCat))], 
+        help="List of datasets to run."
+    )
     parser.add_argument(
         "--save_dir",
         type=str,
@@ -293,11 +293,11 @@ def parse_args():
         default=42,
         help="Seed for all randomness."
     )
-    parser.add_argument(
-        "--save_experiments_individually",
-        action="store_true",
-        help="Whether to save results json for each dataset (default: False)."
-    )
+    # parser.add_argument(
+    #     "--save_experiments_individually",
+    #     action="store_true",
+    #     help="Whether to save results json for each dataset (default: False)."
+    # )
     return parser.parse_args()
 
 
@@ -305,7 +305,6 @@ from optuna_kfoldCV import run_all_openML_with_model, openML_reg_ids_noCat
 
 if __name__ == "__main__":
     args = parse_args()
-    print(args.save_experiments_individually)
 
     # Run experiments
     for model_name in args.models:
@@ -334,7 +333,7 @@ if __name__ == "__main__":
 
         # run the experiments
         run_all_openML_with_model(
-            dataset_ids = openML_reg_ids_noCat,
+            dataset_ids = openML_reg_ids_noCat[args.dataset_indices],
             evaluate_model_func = eval_fun,
             name_model = model_name,
             k_folds = args.k_folds,
@@ -343,8 +342,4 @@ if __name__ == "__main__":
             n_optuna_trials = args.n_optuna_trials,
             device = args.device,
             save_dir = args.save_dir,
-            save_experiments_individually=True,
         )
-
-if __name__ == "__main__":
-    pass
