@@ -237,7 +237,7 @@ def evaluate_End2End(
         "end_lr_factor": trial.suggest_float("end_lr_factor", 0.01, 1.0, log=True),
         "n_epochs": trial.suggest_int("n_epochs", 5, 20, log=True),
         "weight_decay": trial.suggest_float("weight_decay", 1e-6, 0.01, log=True),
-        "batch_size": trial.suggest_int("batch_size", 32, 128, step=32),
+        "batch_size": trial.suggest_int("batch_size", 128, 512, step=128),
     }
 
     return evaluate_pytorch_model_kfoldcv(
