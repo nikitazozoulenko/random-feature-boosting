@@ -97,6 +97,30 @@ def pytorch_load_openml_dataset(
 ###################################################################  V
 
 
+class EarlyStoppingCallback:
+    def __init__(self, patience: int = 20, min_delta: float = 1e-8):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.best_value = float('inf')
+        self.no_improvement_count = 0
+        
+    def __call__(self, study: optuna.study.Study, trial: optuna.trial.FrozenTrial) -> None:
+        current_value = trial.value
+        
+        if current_value is None:
+            return
+            
+        if current_value < (self.best_value - self.min_delta):
+            self.best_value = current_value
+            self.no_improvement_count = 0
+        else:
+            self.no_improvement_count += 1
+            
+        if self.no_improvement_count >= self.patience:
+            study.stop()
+
+
+
 def get_pytorch_optuna_cv_objective(
         trial,
         ModelClass: Callable,
@@ -148,6 +172,7 @@ def evaluate_pytorch_model_single_fold(
         regression_or_classification: Literal["classification", "regression"],
         n_optuna_trials: int,
         device: Literal["cpu", "cuda"],
+        early_stopping_patience: int, # e.g. 25 with n_trials=100
         ):
     """
     Evaluates a PyTorch model on a specified Train and Test set.
@@ -162,7 +187,11 @@ def evaluate_pytorch_model_single_fold(
         trial, ModelClass, get_optuna_params, X_train, y_train, 
         k_folds, cv_seed, regression_or_classification
         )
-    study.optimize(objective, n_trials=n_optuna_trials)
+    study.optimize(
+        objective, 
+        n_trials=n_optuna_trials,
+        callbacks=[EarlyStoppingCallback(early_stopping_patience)]
+        )
 
     #fit model with optimal hyperparams
     np.random.seed(cv_seed)
@@ -210,6 +239,7 @@ def evaluate_pytorch_model_kfoldcv(
         regression_or_classification: Literal["classification", "regression"],
         n_optuna_trials: int,
         device: Literal["cpu", "cuda"],
+        early_stopping_patience: int,
         ):
     """
     Evaluates a PyTorch model using k-fold cross-validation,
@@ -236,7 +266,7 @@ def evaluate_pytorch_model_kfoldcv(
         score_train, score_test, t_fit, t_inference, best_params = evaluate_pytorch_model_single_fold(
             ModelClass, get_optuna_params,
             X_train, X_test, y_train, y_test, k_folds, cv_seed, 
-            regression_or_classification, n_optuna_trials, device
+            regression_or_classification, n_optuna_trials, device, early_stopping_patience
             )
 
         #save
@@ -273,7 +303,8 @@ def evaluate_dataset_with_model(
         regression_or_classification: Literal["classification", "regression"],
         n_optuna_trials: int,
         device: Literal["cpu", "cuda"],
-        save_dir: Optional[str] = None,
+        save_dir: str,
+        early_stopping_patience: int,
         ):
     """Evaluates a model on a given tabular dataset (X, y).
     Returns a json of the kfoldCV results.
@@ -291,7 +322,8 @@ def evaluate_dataset_with_model(
         regression_or_classification (str): Either 'classification' or 'regression'
         n_optuna_trials (int): Number of Optuna trials for hyperparameter tuning.
         device (str): PyTorch device.
-        save_dir (Optional[str]): If not None, path to the save directory. 
+        save_dir (Optional[str]): If not None, path to the save directory.
+        early_stopping_patience (int): Patience for early stopping optimization in Optuna.
     """
     np.random.seed(cv_seed)
     torch.manual_seed(cv_seed)
@@ -299,7 +331,7 @@ def evaluate_dataset_with_model(
 
     # Fetch and process each dataset
     results = evaluate_model_func(
-        X, y, k_folds, cv_seed, regression_or_classification, n_optuna_trials, device
+        X, y, k_folds, cv_seed, regression_or_classification, n_optuna_trials, device, early_stopping_patience
         )
     
     # store results in nested dict
@@ -335,6 +367,7 @@ def run_all_openML_with_model(
         n_optuna_trials: int,
         device: Literal["cpu", "cuda"],
         save_dir: str,
+        early_stopping_patience: int,
         ):
     """Evaluates a model on a list of OpenML datasets.
 
@@ -349,6 +382,7 @@ def run_all_openML_with_model(
         n_optuna_trials (int): Number of Optuna trials for hyperparameter tuning.
         device (str): PyTorch device.
         save_dir (str): Path to the save directory.
+        early_stopping_patience (int): Patience for early stopping optimization in Optuna.
     """
     # Fetch and process each dataset
     experiments = {}
@@ -358,7 +392,7 @@ def run_all_openML_with_model(
         
         json = evaluate_dataset_with_model(
             X, y, dataset_id, evaluate_model_func, name_model, k_folds, cv_seed, 
-            regression_or_classification, n_optuna_trials, device, save_dir
+            regression_or_classification, n_optuna_trials, device, save_dir, early_stopping_patience
             )
         experiments[dataset_id] = json[dataset_id]
         print(f" {i+1}/{len(dataset_ids)} Processed dataset {dataset_id}")

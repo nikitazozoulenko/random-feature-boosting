@@ -32,13 +32,14 @@ def get_GradientRFBoost_eval_fun(
             regression_or_classification: str,
             n_optuna_trials: int,
             device: Literal["cpu", "cuda"],
+            early_stopping_patience: int,
             ):
         ModelClass = GradientRFBoostRegressor
         get_optuna_params = lambda trial : {   
             "feature_type": trial.suggest_categorical("feature_type", [feature_type]),  # Fixed value
             "upscale": trial.suggest_categorical("upscale", [upscale]),                 # Fixed value
 
-            "n_layers": trial.suggest_int("n_layers", 1, 10),
+            "n_layers": trial.suggest_int("n_layers", 1, 40, log=True),
             "hidden_dim": (
                 trial.suggest_int("hidden_dim", 16, 144, step=32)
                 if upscale != "identity"
@@ -51,7 +52,7 @@ def get_GradientRFBoost_eval_fun(
 
         return evaluate_pytorch_model_kfoldcv(
             ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
-            regression_or_classification, n_optuna_trials, device,
+            regression_or_classification, n_optuna_trials, device, early_stopping_patience
         )
     return evaluate_GRFBoost
 
@@ -71,6 +72,7 @@ def get_GreedyRFBoost_eval_fun(
             regression_or_classification: str,
             n_optuna_trials: int,
             device: Literal["cpu", "cuda"],
+            early_stopping_patience: int,
             ):
         
         ModelClass = GreedyRFBoostRegressor
@@ -78,7 +80,7 @@ def get_GreedyRFBoost_eval_fun(
             "feature_type": trial.suggest_categorical("feature_type", [feature_type]), # Fixed value
             "upscale": trial.suggest_categorical("upscale", [upscale]), # Fixed value                # Fixed value
 
-            "n_layers": trial.suggest_int("n_layers", 1, 10),
+            "n_layers": trial.suggest_int("n_layers", 1, 40, log=True),
             "hidden_dim": (
                 trial.suggest_int("hidden_dim", 16, 144, step=32)
                 if upscale != "identity"
@@ -87,12 +89,12 @@ def get_GreedyRFBoost_eval_fun(
             "randfeat_xt_dim": trial.suggest_int("randfeat_xt_dim", 128, 512, step=128),
             "randfeat_x0_dim": trial.suggest_int("randfeat_x0_dim", 128, 512, step=128),
             "boost_lr": trial.suggest_float("boost_lr", 0.3, 1.001, step=0.1),
-            "l2_reg_sandwich": trial.suggest_float("l2_reg_sandwich", 1e-4, 100, log=True),
+            "l2_reg_sandwich": trial.suggest_float("l2_reg_sandwich", 1e-6, 1, log=True),
         }
 
         return evaluate_pytorch_model_kfoldcv(
             ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
-            regression_or_classification, n_optuna_trials, device,
+            regression_or_classification, n_optuna_trials, device, early_stopping_patience
         )
     return evaluate_GreedyRFBoost
 
@@ -113,6 +115,7 @@ def get_GreedyRFBoostDiagScalar_eval_fun(
             regression_or_classification: str,
             n_optuna_trials: int,
             device: Literal["cpu", "cuda"],
+            early_stopping_patience: int,
             ):
         
         ModelClass = GreedyRFBoostRegressor_ScalarDiagDelta
@@ -121,14 +124,14 @@ def get_GreedyRFBoostDiagScalar_eval_fun(
             "upscale": trial.suggest_categorical("upscale", [upscale]), # Fixed value
             "sandwich_solver": trial.suggest_categorical("sandwich_solver", [sandwich_solver]), # Fixed value
 
-            "n_layers": trial.suggest_int("n_layers", 1, 10),
+            "n_layers": trial.suggest_int("n_layers", 1, 40, log=True),
             "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
             "boost_lr": trial.suggest_float("boost_lr", 0.5, 1.001, step=0.1),
-            "l2_reg_sandwich": trial.suggest_float("l2_reg_sandwich", 1e-5, 1, log=True),
+            "l2_reg_sandwich": trial.suggest_float("l2_reg_sandwich", 1e-8, 1e-2, log=True),
         }
         return evaluate_pytorch_model_kfoldcv(
             ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
-            regression_or_classification, n_optuna_trials, device,
+            regression_or_classification, n_optuna_trials, device, early_stopping_patience
         )
     return evaluate_GreedyRFBoost
 
@@ -142,17 +145,18 @@ def evaluate_RidgeCV(
         regression_or_classification: str,
         n_optuna_trials: int,
         device: Literal["cpu", "cuda"],
+        early_stopping_patience: int,
         ):
     ModelClass = RidgeCVModule
     get_optuna_params = lambda trial : {
-        "lower_alpha": trial.suggest_float("lower_alpha", 1e-5, 0.1, log=True),
-        "upper_alpha": trial.suggest_float("upper_alpha", 1e-5, 0.1, log=True),
-        "n_alphas": trial.suggest_int("n_alphas", 10, 50),
+        "lower_alpha": trial.suggest_float("lower_alpha", 1e-8, 1e-5, log=True),
+        "upper_alpha": trial.suggest_float("upper_alpha", 0.001, 0.1, log=True),
+        "n_alphas": trial.suggest_int("n_alphas", 10, 20),
     }
 
     return evaluate_pytorch_model_kfoldcv(
         ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
-        regression_or_classification, n_optuna_trials, device,
+        regression_or_classification, n_optuna_trials, device, early_stopping_patience
     )
 
 
@@ -165,15 +169,16 @@ def evaluate_Ridge(
         regression_or_classification: str,
         n_optuna_trials: int,
         device: Literal["cpu", "cuda"],
+        early_stopping_patience: int,
         ):
     ModelClass = RidgeModule
     get_optuna_params = lambda trial : {
-        "l2_reg": trial.suggest_float("l2_reg", 1e-5, 0.1, log=True),
+        "l2_reg": trial.suggest_float("l2_reg", 1e-7, 0.1, log=True),
     }
 
     return evaluate_pytorch_model_kfoldcv(
         ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
-        regression_or_classification, n_optuna_trials, device,
+        regression_or_classification, n_optuna_trials, device, early_stopping_patience
     )
 
 
@@ -186,21 +191,24 @@ def evaluate_XGBoostRegressor(
         regression_or_classification: str,
         n_optuna_trials: int,
         device: Literal["cpu", "cuda"],
+        early_stopping_patience: int,
         ):
     ModelClass = XGBoostRegressorWrapper
     get_optuna_params = lambda trial : {
         "objective": trial.suggest_categorical("objective", ["reg:squarederror"]),   # Fixed value
 
-        "lambda": trial.suggest_float("lambda", 1e-3, 10.0, log=True),
+        "alpha": trial.suggest_float("alpha", 1e-3, 1.0, log=True),
+        "lambda": trial.suggest_float("lambda", 1e-3, 100.0, log=True),
         "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.5, log=True),
-        "n_estimators": trial.suggest_int("n_estimators", 50, 300),
+        "n_estimators": trial.suggest_int("n_estimators", 50, 1000),
         "max_depth": trial.suggest_int("max_depth", 3, 10),
         #"subsample": trial.suggest_float("subsample", 0.5, 1.0),
+        #"colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
     }
 
     return evaluate_pytorch_model_kfoldcv(
         ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
-        regression_or_classification, n_optuna_trials, device
+        regression_or_classification, n_optuna_trials, device, early_stopping_patience
     )
 
 
@@ -213,6 +221,7 @@ def evaluate_End2End(
         regression_or_classification: str,
         n_optuna_trials: int,
         device: Literal["cpu", "cuda"],
+        early_stopping_patience: int,
         ):
     
     ModelClass = End2EndMLPResNet
@@ -233,7 +242,7 @@ def evaluate_End2End(
 
     return evaluate_pytorch_model_kfoldcv(
         ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
-        regression_or_classification, n_optuna_trials, device,
+        regression_or_classification, n_optuna_trials, device, early_stopping_patience
         )
 
 
@@ -293,11 +302,12 @@ def parse_args():
         default=42,
         help="Seed for all randomness."
     )
-    # parser.add_argument(
-    #     "--save_experiments_individually",
-    #     action="store_true",
-    #     help="Whether to save results json for each dataset (default: False)."
-    # )
+    parser.add_argument(
+        "--early_stopping_patience",
+        type=int,
+        default=25,
+        help="Number of trials before early stopping in Optuna early stopping callback."
+    )
     return parser.parse_args()
 
 
@@ -342,4 +352,5 @@ if __name__ == "__main__":
             n_optuna_trials = args.n_optuna_trials,
             device = args.device,
             save_dir = args.save_dir,
+            early_stopping_patience = args.early_stopping_patience,
         )
