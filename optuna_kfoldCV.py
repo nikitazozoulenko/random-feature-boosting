@@ -182,7 +182,8 @@ def evaluate_pytorch_model_single_fold(
     inference time, and the best hyperparameters.
     """
     #hyperparameter tuning with Optuna
-    study = optuna.create_study(direction="minimize", )
+    sampler = optuna.samplers.TPESampler(seed=cv_seed)  # Make the sampler behave in a deterministic way.
+    study = optuna.create_study(direction="minimize", sampler=sampler)
     objective = lambda trial: get_pytorch_optuna_cv_objective(
         trial, ModelClass, get_optuna_params, X_train, y_train, 
         k_folds, cv_seed, regression_or_classification
