@@ -200,10 +200,10 @@ def evaluate_XGBoostRegressor(
         "alpha": trial.suggest_float("alpha", 0.00001, 0.01, log=True),
         "lambda": trial.suggest_float("lambda", 1e-3, 100.0, log=True),
         "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.5, log=True),
-        "n_estimators": trial.suggest_int("n_estimators", 100, 1000, log=True),
+        "n_estimators": trial.suggest_int("n_estimators", 100, 2000, log=True),
         "max_depth": trial.suggest_int("max_depth", 3, 10),
-        #"subsample": trial.suggest_float("subsample", 0.5, 1.0),
-        #"colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
+        "subsample": trial.suggest_float("subsample", 0.3, 1.0),
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.3, 1.0),
     }
 
     return evaluate_pytorch_model_kfoldcv(
