@@ -197,10 +197,10 @@ def evaluate_XGBoostRegressor(
     get_optuna_params = lambda trial : {
         "objective": trial.suggest_categorical("objective", ["reg:squarederror"]),   # Fixed value
 
-        "alpha": trial.suggest_float("alpha", 1e-3, 1.0, log=True),
+        "alpha": trial.suggest_float("alpha", 0.00001, 0.01, log=True),
         "lambda": trial.suggest_float("lambda", 1e-3, 100.0, log=True),
         "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.5, log=True),
-        "n_estimators": trial.suggest_int("n_estimators", 50, 1000),
+        "n_estimators": trial.suggest_int("n_estimators", 100, 1000, log=True),
         "max_depth": trial.suggest_int("max_depth", 3, 10),
         #"subsample": trial.suggest_float("subsample", 0.5, 1.0),
         #"colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
