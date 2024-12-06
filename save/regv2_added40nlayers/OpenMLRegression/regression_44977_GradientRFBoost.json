@@ -1,0 +1,81 @@
+{
+    "44977": {
+        "GradientRFBoost": {
+            "score_train": [
+                0.46143749356269836,
+                0.4658888578414917,
+                0.4663045406341553,
+                0.46691131591796875,
+                0.4614546000957489
+            ],
+            "score_test": [
+                0.4806494116783142,
+                0.48656803369522095,
+                0.47609391808509827,
+                0.461710125207901,
+                0.49753400683403015
+            ],
+            "t_fit": [
+                116.03877186775208,
+                49.213472574949265,
+                59.78383445739746,
+                28.669277250766754,
+                71.00626568496227
+            ],
+            "t_inference": [
+                11.02400267124176,
+                6.066131114959717,
+                5.49043607711792,
+                3.8624943047761917,
+                7.566657468676567
+            ],
+            "hyperparams": [
+                {
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "n_layers": 36,
+                    "hidden_dim": 112,
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "boost_lr": 0.8
+                },
+                {
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "n_layers": 17,
+                    "hidden_dim": 112,
+                    "randfeat_xt_dim": 384,
+                    "randfeat_x0_dim": 512,
+                    "boost_lr": 1.0
+                },
+                {
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "n_layers": 19,
+                    "hidden_dim": 48,
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "boost_lr": 1.0
+                },
+                {
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "n_layers": 12,
+                    "hidden_dim": 112,
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 256,
+                    "boost_lr": 1.0
+                },
+                {
+                    "feature_type": "SWIM",
+                    "upscale": "dense",
+                    "n_layers": 20,
+                    "hidden_dim": 144,
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "boost_lr": 1.0
+                }
+            ]
+        }
+    }
+}

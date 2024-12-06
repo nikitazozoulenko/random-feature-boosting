@@ -1108,7 +1108,7 @@ class GradientRandomFeatureBoostingClassification(FittableModule):
 
 
                 probs = nn.functional.softmax(cls(X), dim=1)
-                G = (y - probs) @ cls.linear.weight #negative gradient TODO divide by N?
+                G = (y - probs) @ cls.linear.weight
 
                 # fit Least Squares to negative gradient (finding functional direction)
                 Delta, Delta_b, _ = fit_ridge_ALOOCV(F, G)
