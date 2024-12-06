@@ -7,9 +7,9 @@ import torch
 import torch.nn as nn
 from torch import Tensor, tensor
 
-from models.models import RidgeCVModule, RidgeModule, XGBoostRegressorWrapper
-from models.models import End2EndMLPResNet
-from models.models import GradientRFBoostRegressor, GreedyRFBoostRegressor, GreedyRFBoostRegressor_ScalarDiagDelta
+from old.models import RidgeCVModule, RidgeModule, XGBoostRegressorWrapper
+from old.models import End2EndMLPResNet
+from old.models import GradientRFBoostRegressor, GreedyRFBoostRegressor, GreedyRFBoostRegressor_ScalarDiagDelta
 from optuna_kfoldCV import evaluate_pytorch_model_kfoldcv
 
 

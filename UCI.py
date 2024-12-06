@@ -11,8 +11,8 @@ from torch import Tensor
 from ucimlrepo import fetch_ucirepo 
 
 from optuna_kfoldCV import evaluate_pytorch_model_kfoldcv, evaluate_dataset_with_model
-from models.models import End2EndMLPResNet
-from models.models import GradientRFBoostRegressor, GreedyRFBoostRegressor, GreedyRFBoostRegressor_ScalarDiagDelta
+from old.models import End2EndMLPResNet
+from old.models import GradientRFBoostRegressor, GreedyRFBoostRegressor, GreedyRFBoostRegressor_ScalarDiagDelta
 from regression_param_specs import evaluate_Ridge
 
 
