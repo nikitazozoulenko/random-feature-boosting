@@ -10,7 +10,7 @@ from torch import Tensor
 
 from models.sandwiched_least_squares import sandwiched_LS_dense, sandwiched_LS_diag, sandwiched_LS_scalar
 from models.swim import SWIMLayer
-from models.base import FittableModule, RidgeModule, FittableSequential, Identity
+from models.base import FittableModule, RidgeModule, FittableSequential, Identity, LogisticRegression
 
 
 
@@ -84,7 +84,7 @@ class GhatBoostingLayer(nn.Module):
 
 
 
-class BaseGRFBoost(FittableModule):
+class BaseGRFRBoost(FittableModule):
     def __init__(
             self, 
             upscale: Upscale,
@@ -94,8 +94,10 @@ class BaseGRFBoost(FittableModule):
             ):
         """
         Base class for Greedy Random Feature Boosting.
+        NOTE that we currently store all intermediary classifiers/regressors,
+        for simplicity. We only use the topmost one for prediction.
         """
-        super(BaseGRFBoost, self).__init__()
+        super(BaseGRFRBoost, self).__init__()
         # simple class, same for everyone
         self.upscale = upscale
 
@@ -115,6 +117,15 @@ class BaseGRFBoost(FittableModule):
 
 
     def fit(self, X: Tensor, y: Tensor):
+        """TODO for classification, assumes y is onehot (N, C) for mulitclass, (N,1) for binary.
+
+        Args:
+            X (Tensor): _description_
+            y (Tensor): _description_
+
+        Returns:
+            _type_: _description_
+        """
         with torch.no_grad():
             X0 = X
 
@@ -137,7 +148,7 @@ class BaseGRFBoost(FittableModule):
 
 
     def forward(self, X: Tensor) -> Tensor:
-        """Forward pass for random feature boosting.
+        """Forward pass for random feature representation boosting.
         
         Args:
             X (Tensor): Input data shape (N, in_dim)"""
@@ -316,14 +327,14 @@ class GhatGreedyLayerMSE(GhatBoostingLayer):
 
 
 ############################################################################
-################# Random Feature Boosting for Regression ###################
+################# Random Feature Representation Boosting for Regression ###################
 ############################################################################
 
 
 
 
 
-class GreedyRFBoostRegressor(BaseGRFBoost):
+class GreedyRFBoostRegressor(BaseGRFRBoost):
     def __init__(self,
                  in_dim: int,
                  out_dim: int,
@@ -391,7 +402,7 @@ class GreedyRFBoostRegressor(BaseGRFBoost):
 
 
 
-class GradientRFBoostRegressor(BaseGRFBoost):
+class GradientRFBoostRegressor(BaseGRFRBoost):
     def __init__(self,
                  in_dim: int,
                  out_dim: int,
@@ -455,36 +466,153 @@ class GradientRFBoostRegressor(BaseGRFBoost):
 
 
 
-# class GradientRFBoostClassifier(BaseGRFBoost):
-#     def __init__(self,
-#                  in_dim: int,
-#                  out_dim: int,
-#                  hidden_dim: int = 128,
-#                  n_layers: int = 5,
-#                  randfeat_xt_dim: int = 128,
-#                  randfeat_x0_dim: int = 128,
-#                  l2_cls: float = 0.01, #TODO ALOOCV or fixed l2_cls
-#                  max_iter: int = 100,
-#                  l2_ghat: float = 0.01,
-#                  boost_lr: float = 1.0,
-#                  feature_type : Literal["iid", "SWIM"] = "SWIM",
-#                  upscale: Literal["iid", "SWIM", "identity"] = "iid",
-#                  ridge_solver: Literal["iterative", "analytic"] = "analytic",
-#                  ):
-#         self.in_dim = in_dim
-#         self.out_dim = out_dim
-#         self.hidden_dim = hidden_dim
-#         self.n_layers = n_layers
-#         self.randfeat_xt_dim = randfeat_xt_dim
-#         self.randfeat_x0_dim = randfeat_x0_dim
-#         self.l2_cls = l2_cls
-#         self.max_iter = max_iter
-#         self.l2_ghat = l2_ghat
-#         self.boost_lr = boost_lr
-#         self.feature_type = feature_type
-#         self.upscale = upscale
+def line_search_cross_entropy(n_classes, cls, X, y, G_hat):
+    """Solves the line search risk minimizatin problem
+    R(W, X + a * g) for mutliclass cross entropy loss"""
+    # No onehot encoding
+    if n_classes>2:
+        y_labels = torch.argmax(y, dim=1)
+    else:
+        y_labels = y
 
-#         super(GradientRFBoostClassifier, self).__init__() # TODO do this correctly.
+    #loss function
+    if n_classes > 2:
+        loss_fn = nn.functional.cross_entropy #this is with logits
+    else:
+        loss_fn = nn.functional.binary_cross_entropy_with_logits
+
+    with torch.enable_grad():
+        alpha = torch.tensor([0.0], requires_grad=True, device=X.device, dtype=X.dtype)
+        optimizer = torch.optim.LBFGS([alpha])
+        def closure():
+            optimizer.zero_grad()
+            logits = cls(X + alpha * G_hat)
+            loss = loss_fn(logits, y_labels)
+            loss.backward()
+            print("linesearch loss", loss)
+            return loss
+        optimizer.step(closure)
+
+    return alpha.detach().item()
 
 
+
+class GhatGradientLayerCrossEntropy(GhatBoostingLayer):
+    def __init__(self,
+                 n_classes: int,
+                 hidden_dim: int,
+                 l2_ghat: float,
+                 ):
+        self.n_classes = n_classes
+        self.hidden_dim = hidden_dim
+        self.l2_ghat = l2_ghat
+        super(GhatGradientLayerMSE, self).__init__()
+        self.ridge = RidgeModule(l2_ghat)
+
+
+    def fit_transform(self, F: Tensor, Xt: Tensor, y: Tensor, auxiliary_cls: LogisticRegression) -> Tensor:
+        """Fits the functional gradient given features, resnet neurons, and targets,
+        and returns the gradient predictions
+
+        Args:
+            F (Tensor): Features, shape (N, p)
+            Xt (Tensor): ResNet neurons, shape (N, D)
+            y (Tensor): Labels, onehot shape (N, C) or (N, 1) for binary classification
+            auxiliary_reg (RidgeModule): Auxiliary top level regressor.
+        """
+        # compute negative gradient, L_2(mu_N) normalized
+        if self.n_classes==2:
+            probs = nn.functional.sigmoid(auxiliary_cls(Xt))
+        else:
+            probs = nn.functional.softmax(auxiliary_cls(Xt), dim=1)
+        G = (y - probs) @ auxiliary_cls.linear.weight
+        N = y.size(0)
+        G = G / torch.norm(G) * N**0.5
+
+        # fit to negative gradient (finding functional direction)
+        Ghat = self.ridge.fit_transform(F, G)
+
+        # line search closed form risk minimization of R(W_t, Phi_{t+1})
+        self.linesearch = line_search_cross_entropy(
+            self.n_classes, auxiliary_cls, Xt, y, Ghat)
+        return Ghat * self.linesearch
+    
+
+    def forward(self, F: Tensor) -> Tensor:
+        return self.linesearch * self.ridge(F)
+    
+
+class GradientRFBoostClassifier(BaseGRFRBoost):
+    def __init__(self,
+                 in_dim: int,
+                 n_classes: int,
+                 hidden_dim: int = 128,
+                 n_layers: int = 5,
+                 randfeat_xt_dim: int = 128,
+                 randfeat_x0_dim: int = 128,
+                 l2_cls: float = 0.01,
+                 l2_ghat: float = 0.01,
+                 boost_lr: float = 1.0,
+                 feature_type : Literal["iid", "SWIM"] = "SWIM",
+                 upscale_type: Literal["iid", "SWIM", "identity"] = "iid",
+                 ghat_ridge_solver: Literal["lbfgs", "analytic"] = "analytic", #TODO not currently supported
+                 lbfgs_lr: float = 1.0,
+                 lbfgs_max_iter: int = 100,
+                 ):
+        """TODO
+
+        Args:
+            in_dim (int): _description_
+            n_classes (int): _description_
+            hidden_dim (int, optional): _description_. Defaults to 128.
+            n_layers (int, optional): _description_. Defaults to 5.
+            randfeat_xt_dim (int, optional): _description_. Defaults to 128.
+            randfeat_x0_dim (int, optional): _description_. Defaults to 128.
+            l2_cls (float, optional): _description_. Defaults to 0.01.
+            l2_ghat (float, optional): _description_. Defaults to 0.01.
+            boost_lr (float, optional): _description_. Defaults to 1.0.
+            feature_type (Literal[&quot;iid&quot;, &quot;SWIM&quot;], optional): _description_. Defaults to "SWIM".
+            upscale_type (Literal[&quot;iid&quot;, &quot;SWIM&quot;, &quot;identity&quot;], optional): _description_. Defaults to "iid".
+            ghat_ridge_solver (Literal[&quot;lbfgs&quot;, &quot;analytic&quot;], optional): _description_. Defaults to "analytic".
+            lbfgs_max_iter (int, optional): _description_. Defaults to 100.
+        """
+        self.in_dim = in_dim
+        self.n_classes = n_classes
+        self.hidden_dim = hidden_dim
+        self.n_layers = n_layers
+        self.randfeat_xt_dim = randfeat_xt_dim
+        self.randfeat_x0_dim = randfeat_x0_dim
+        self.l2_cls = l2_cls
+        self.l2_ghat = l2_ghat
+        self.boost_lr = boost_lr
+        self.feature_type = feature_type
+        self.upscale_type = upscale_type
+
+        # if no upscale, set hidden_dim to in_dim
+        if upscale_type == "identity":
+            self.hidden_dim = in_dim
+        upscale = Upscale(in_dim, hidden_dim, upscale_type)
+
+        # auxiliary classifiers
+        top_level_classifiers = [LogisticRegression(n_classes, l2_cls, lbfgs_lr, lbfgs_max_iter) 
+                                 for _ in range(n_layers+1)] 
+        # TODO this is the one that needs a pointer to the previous class...
+        # TODO i should make this work for both reg and cls, so i can implement a speedy iterative one too for reg.
+        # leave for now. Either .fit takes in the previous model, or i pass a pointer in the constructor.
+
+        # random feature layers
+        random_feature_layers = [
+            RandFeatLayer(in_dim, hidden_dim, randfeat_xt_dim, randfeat_x0_dim, feature_type)
+            for _ in range(n_layers)
+        ]
+
+        # ghat boosting layers
+        ghat_boosting_layers = [
+            GhatGradientLayerCrossEntropy(n_classes, hidden_dim, l2_ghat)
+            for t in range(n_layers)
+        ]
+
+        super(GradientRFBoostClassifier, self).__init__(
+            upscale, top_level_classifiers, random_feature_layers, ghat_boosting_layers
+        )
 

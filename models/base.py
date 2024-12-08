@@ -44,33 +44,18 @@ class FittableModule(nn.Module):
         """Fit the module and return the transformed data."""
         self.fit(X, y)
         return self(X)
-
-
-
-class Sequential(FittableModule):
-    def __init__(self, *layers: FittableModule):
-        """
-        Args:
-            *layers (FittableModule): Variable length argument list of FittableModules to chain together.
-        """
-        super(Sequential, self).__init__()
-        self.layers = nn.ModuleList(layers)
-
-
-    def fit_transform(self, X: Tensor, y: Tensor):
-        for layer in self.layers:
-            X  = layer.fit_transform(X, y)
-        return X
-
-
-    def forward(self, X: Tensor) -> Tensor:
-        for layer in self.layers:
-            X = layer(X)
-        return X
     
+
+    @abc.abstractmethod
+    def forward(self, X: Tensor) -> Tensor:
+        """Forward pass of the model."""
+        pass
+
 
 
 def make_fittable(module_class: Type[nn.Module]) -> Type[FittableModule]:
+    """Converts a nn.Module class into a FittableModule class,
+    with a .fit method that does nothing."""
     class FittableModuleWrapper(FittableModule, module_class):
         def __init__(self, *args, **kwargs):
             FittableModule.__init__(self)
@@ -86,18 +71,6 @@ Tanh = make_fittable(nn.Tanh)
 ReLU = make_fittable(nn.ReLU)
 Identity = make_fittable(nn.Identity)
 FittableSequential = make_fittable(nn.Sequential)
-
-
-# class FittableSequential(FittableModule):
-#     def __init__(self, *layers):
-#         super().__init__()
-#         self.sequential = nn.Sequential(*layers)
-
-#     def fit(self, X: Tensor, y: Tensor):
-#         return self
-        
-#     def forward(self, x: Tensor):
-#         return self.sequential(x)
 
 
 ##########################################
@@ -128,6 +101,7 @@ class RidgeCVModule(FittableModule):
     def forward(self, X: Tensor) -> Tensor:
         return X @ self.W + self.b
     
+
 
 class RidgeModule(FittableModule):
     def __init__(self, l2_reg: float = 1e-3):
@@ -208,24 +182,19 @@ class LogisticRegressionSGD(FittableModule):
         return self.model(X)
 
 
+
 class LogisticRegression(FittableModule):
-    def __init__(self, 
-                 in_dim: int,
-                 out_dim: int = 10,
-                 l2_reg: float = 0.001,
+    def __init__(self,
+                 n_classes: int = 10,
+                 l2_lambda: float = 0.001,
                  lr: float = 1.0,
                  max_iter: int = 100,
                  ):
         super(LogisticRegression, self).__init__()
-        self.linear = nn.Linear(in_dim, out_dim)
-        self.l2_reg = l2_reg
+        self.n_classes = n_classes
+        self.l2_lambda = l2_lambda
         self.lr = lr
         self.max_iter = max_iter
-
-        if out_dim > 1:
-            self.loss = nn.functional.cross_entropy #this is with logits
-        else:
-            self.loss = nn.functional.binary_cross_entropy_with_logits
 
 
     def fit(self, 
@@ -233,34 +202,45 @@ class LogisticRegression(FittableModule):
             y: Tensor,
             init_W_b: Optional[Tuple[Tensor, Tensor]] = None,
             ):
+        """Fits a logistic regression model with L2 regularization
+        via the LBFGS method.
         
+        Args:
+            X (Tensor): Training data, shape (N, D).
+            y (Tensor): Training targets, shape (N, d).
+            init_W_b (Tuple[Tensor, Tensor], optional): Initial weights and bias. Defaults to None."""
+
+        D = X.size(1)
+        if self.n_classes > 2:
+            #cross entropy
+            loss_fn = nn.functional.cross_entropy #this is with logits
+            self.linear = nn.Linear(D, self.n_classes).to(X.device)
+        else:
+            #binary cross entropy for n_classes=2
+            loss_fn = nn.functional.binary_cross_entropy_with_logits
+            self.linear = nn.Linear(D, 1).to(X.device)
+        self.to(X.device)
+
         # No onehot encoding
         if y.dim() > 1:
             y_labels = torch.argmax(y, dim=1)
         else:
             y_labels = y
 
-        # Put model on device
-        device = X.device
-        self.to(device)
-
         # Initialize weights and bias
         if init_W_b is not None:
             W, b = init_W_b
             self.linear.weight.data = W
             self.linear.bias.data = b
-        else:
-            nn.init.kaiming_normal_(self.linear.weight)
-            nn.init.zeros_(self.linear.bias)
         
         with torch.enable_grad():
             # Optimize
             optimizer = torch.optim.LBFGS(self.linear.parameters(), lr=self.lr, max_iter=self.max_iter)
             def closure():
-                optimizer.zero_grad()
+                self.optimizer.zero_grad()
                 logits = self.linear(X)
-                loss = self.loss(logits, y_labels)
-                loss += self.l2_reg * torch.linalg.norm(self.linear.weight)**2
+                loss = loss_fn(logits, y_labels)
+                loss += self.l2_lambda * torch.sum(self.linear.weight**2)
                 loss.backward()
                 return loss
             optimizer.step(closure)
