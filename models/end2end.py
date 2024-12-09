@@ -25,7 +25,7 @@ class End2EndMLPResNet(FittableModule):
                  out_dim: int,
                  n_blocks: int,
                  activation: nn.Module = nn.ReLU(),
-                 loss: Literal["mse", "cross_entropy"] = "mse",
+                 loss: Literal["mse", "cce", "bce"] = "mse",
                  lr: float = 1e-3,
                  end_lr_factor: float = 1e-2,
                  n_epochs: int = 10,
@@ -78,9 +78,9 @@ class End2EndMLPResNet(FittableModule):
         # Loss (needs to be strings due to Optuna)
         if loss == "mse":
             self.loss = nn.functional.mse_loss
-        elif loss == "bce":
-            self.loss = nn.functional.cross_entropy
         elif loss == "cce":
+            self.loss = nn.functional.cross_entropy
+        elif loss == "bce":
             self.loss = nn.functional.binary_cross_entropy_with_logits
         else:
             raise ValueError(f"Unknown value of loss argument. Given: {loss}")
