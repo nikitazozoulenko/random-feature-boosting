@@ -46,10 +46,10 @@ class FittableModule(nn.Module):
         return self(X)
     
 
-    @abc.abstractmethod
-    def forward(self, X: Tensor) -> Tensor:
-        """Forward pass of the model."""
-        pass
+    # @abc.abstractmethod
+    # def forward(self, X: Tensor) -> Tensor:
+    #     """Forward pass of the model."""
+    #     pass
 
 
 
@@ -63,7 +63,7 @@ def make_fittable(module_class: Type[nn.Module]) -> Type[FittableModule]:
         
         def fit(self, X: Tensor, y: Tensor):
             return self
-    
+        
     return FittableModuleWrapper
 
 
@@ -222,7 +222,7 @@ class LogisticRegression(FittableModule):
         self.to(X.device)
 
         # No onehot encoding
-        if y.dim() > 1:
+        if self.n_classes > 2:
             y_labels = torch.argmax(y, dim=1)
         else:
             y_labels = y
@@ -237,7 +237,7 @@ class LogisticRegression(FittableModule):
             # Optimize
             optimizer = torch.optim.LBFGS(self.linear.parameters(), lr=self.lr, max_iter=self.max_iter)
             def closure():
-                self.optimizer.zero_grad()
+                optimizer.zero_grad()
                 logits = self.linear(X)
                 loss = loss_fn(logits, y_labels)
                 loss += self.l2_lambda * torch.sum(self.linear.weight**2)

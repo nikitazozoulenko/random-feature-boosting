@@ -98,33 +98,24 @@ class BaseGRFRBoost(FittableModule):
         for simplicity. We only use the topmost one for prediction.
         """
         super(BaseGRFRBoost, self).__init__()
-        # simple class, same for everyone
-        self.upscale = upscale
 
-        # either ridge, or multiclass logistic, or binary logistic
-        self.top_level_modules = nn.ModuleList(top_level_modules)
-
-        # random feature layer
-        # concat features [f(xt), h(x0)]
-        # OR concat inputs f([xt, x0]) with or without batch norm?
-        self.random_feature_layers = nn.ModuleList(random_feature_layers)
-
-        # fitting depends on classification/regression. but gradient boosting only requires the neuron gradients (but line search is different)
-        # for gradient: Class has to compute the gradient, which depends on the loss (mse, bce, cce).
-        #               After gradient has been computed, the procedure is the same. Either linalg.solve or some type of gradient descent
-        # for greedy: special case for regression. Maybe i can also do this with L-BFGS
-        self.ghat_boosting_layers = nn.ModuleList(ghat_boosting_layers)
+        self.upscale = upscale # simple upscale layer, same for everyone
+        self.top_level_modules = nn.ModuleList(top_level_modules) # either ridge, or multiclass logistic, or binary logistic
+        self.random_feature_layers = nn.ModuleList(random_feature_layers) # random features, same for everyone
+        self.ghat_boosting_layers = nn.ModuleList(ghat_boosting_layers) # functional gradient boosting layers
 
 
     def fit(self, X: Tensor, y: Tensor):
-        """TODO for classification, assumes y is onehot (N, C) for mulitclass, (N,1) for binary.
+        """Fits the Random Feature Representation Boosting model.
+        NOTE that in the classification case, y has to be onehot for the
+        multiclass case, and (N, 1) for binary classification. For regression
+        y has to be (N, d)
 
         Args:
-            X (Tensor): _description_
-            y (Tensor): _description_
-
-        Returns:
-            _type_: _description_
+            X (Tensor): Input data, shape (N, in_dim)
+            y (Tensor): Targets, shape (N, d) for regression,
+            or onehot (N, C) for multiclass classification, 
+            or (N, 1) for binary classification.
         """
         with torch.no_grad():
             X0 = X
@@ -140,7 +131,7 @@ class BaseGRFRBoost(FittableModule):
                 F = self.random_feature_layers[t].fit_transform(X, X0, y)
                 # Step 2: Greedily or Gradient boost to minimize R(W_t, Phi_t + Delta F)
                 Ghat = self.ghat_boosting_layers[t].fit_transform(F, X, y, self.top_level_modules[t])
-                X += self.boost_lr * Ghat
+                X = X + self.boost_lr * Ghat
                 # Step 3: Learn top level classifier W_t
                 self.top_level_modules[t+1].fit(X, y)
 
@@ -163,7 +154,7 @@ class BaseGRFRBoost(FittableModule):
                 # print("F", F.shape)
                 Ghat = ghat_layer(F)
                 # print("Ghat", Ghat.shape)
-                X += self.boost_lr * Ghat
+                X = X + self.boost_lr * Ghat
             # Top level regressor
             return self.top_level_modules[-1](X)
         
@@ -334,7 +325,7 @@ class GhatGreedyLayerMSE(GhatBoostingLayer):
 
 
 
-class GreedyRFBoostRegressor(BaseGRFRBoost):
+class GreedyRFRBoostRegressor(BaseGRFRBoost):
     def __init__(self,
                  in_dim: int,
                  out_dim: int,
@@ -396,13 +387,13 @@ class GreedyRFBoostRegressor(BaseGRFRBoost):
             for _ in range(n_layers)
         ]
 
-        super(GreedyRFBoostRegressor, self).__init__(
+        super(GreedyRFRBoostRegressor, self).__init__(
             upscale, top_level_regs, random_feature_layers, ghat_boosting_layers
         )
 
 
 
-class GradientRFBoostRegressor(BaseGRFRBoost):
+class GradientRFRBoostRegressor(BaseGRFRBoost):
     def __init__(self,
                  in_dim: int,
                  out_dim: int,
@@ -449,7 +440,7 @@ class GradientRFBoostRegressor(BaseGRFRBoost):
             for _ in range(n_layers)
         ]
 
-        super(GradientRFBoostRegressor, self).__init__(
+        super(GradientRFRBoostRegressor, self).__init__(
             upscale, top_level_regs, random_feature_layers, ghat_boosting_layers
         )
 
@@ -506,7 +497,7 @@ class GhatGradientLayerCrossEntropy(GhatBoostingLayer):
         self.n_classes = n_classes
         self.hidden_dim = hidden_dim
         self.l2_ghat = l2_ghat
-        super(GhatGradientLayerMSE, self).__init__()
+        super(GhatGradientLayerCrossEntropy, self).__init__()
         self.ridge = RidgeModule(l2_ghat)
 
 
@@ -542,7 +533,7 @@ class GhatGradientLayerCrossEntropy(GhatBoostingLayer):
         return self.linesearch * self.ridge(F)
     
 
-class GradientRFBoostClassifier(BaseGRFRBoost):
+class GradientRFRBoostClassifier(BaseGRFRBoost):
     def __init__(self,
                  in_dim: int,
                  n_classes: int,
@@ -612,7 +603,7 @@ class GradientRFBoostClassifier(BaseGRFRBoost):
             for t in range(n_layers)
         ]
 
-        super(GradientRFBoostClassifier, self).__init__(
+        super(GradientRFRBoostClassifier, self).__init__(
             upscale, top_level_classifiers, random_feature_layers, ghat_boosting_layers
         )
 

@@ -635,6 +635,8 @@ class End2EndMLPResNet(FittableModule):
             self.loss = nn.MSELoss()
         elif loss == "cross_entropy":
             self.loss = nn.CrossEntropyLoss()
+        elif loss == "bce":
+            self.loss = nn.BCEWithLogitsLoss()
         else:
             raise ValueError(f"Unknown value of loss argument. Given: {loss}")
 

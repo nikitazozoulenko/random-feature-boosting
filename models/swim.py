@@ -72,6 +72,7 @@ class SWIMLayer(FittableModule):
                 y_norm = torch.linalg.norm(dy, axis=1, keepdims=True) #NOTE 2023 paper uses ord=inf instead of ord=2
                 grad = (y_norm / dists).reshape(-1) 
                 p = grad/grad.sum()
+                print(p.min()) # TODO THIS CANNOT GET TOO SMALL? or?
             elif self.sampling_method=="uniform":
                 p = torch.ones(n, dtype=dtype, device=device) / n
             else:
