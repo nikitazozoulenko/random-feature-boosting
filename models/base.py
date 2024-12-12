@@ -62,6 +62,7 @@ def make_fittable(module_class: Type[nn.Module]) -> Type[FittableModule]:
             module_class.__init__(self, *args, **kwargs)
         
         def fit(self, X: Tensor, y: Tensor):
+            self.to(X.device)
             return self
         
     return FittableModuleWrapper

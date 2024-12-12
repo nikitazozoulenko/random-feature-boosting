@@ -31,6 +31,7 @@ class End2EndMLPResNet(FittableModule):
                  n_epochs: int = 10,
                  weight_decay: float = 1e-5,
                  batch_size: int = 64,
+                 upsample: bool = True,
                  ):
         """End-to-end trainer for residual networks using Adam optimizer 
         with a CosineAnnealingLR scheduler with end_lr = lr * end_lr_factor.
@@ -48,16 +49,25 @@ class End2EndMLPResNet(FittableModule):
             n_epochs (int): Number of training epochs.
             weight_decay (float): Weight decay for Adam optimizer.
             batch_size (int): Batch size for training.
+            upsample (bool): Whether to use an upsample layer in the beginning.
         """
         super(End2EndMLPResNet, self).__init__()
         self.n_epochs = n_epochs
         self.batch_size = batch_size
 
-        # Define resnet with batch norm
-        self.upsample = nn.Linear(in_dim, hidden_dim)
-        self.batch_norm = nn.BatchNorm1d(hidden_dim)
-        self.activation = activation
-        
+        #upsample
+        if upsample:
+            self.upsample = nn.Sequential(
+                nn.Linear(in_dim, hidden_dim),
+                nn.BatchNorm1d(hidden_dim),
+                activation
+                )
+        else:
+            self.upsample = nn.Identity()
+            if hidden_dim != in_dim:
+                raise ValueError("If upsample is False, hidden_dim must be equal to in_dim.")
+
+        #residual blocks
         self.residual_blocks = nn.ModuleList([
             nn.Sequential(
                 nn.Linear(hidden_dim, bottleneck_dim),
@@ -116,8 +126,6 @@ class End2EndMLPResNet(FittableModule):
 
     def forward(self, X: Tensor) -> Tensor:
         X = self.upsample(X)
-        X = self.batch_norm(X)
-        X = self.activation(X)
         for block in self.residual_blocks:
             X = X + block(X)
         X = self.output_layer(X)

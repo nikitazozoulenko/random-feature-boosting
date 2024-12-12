@@ -55,7 +55,6 @@ class SWIMLayer(FittableModule):
             N, D = X.shape
             dtype = X.dtype
             device = X.device
-            EPS = torch.tensor(self.epsilon, dtype=dtype, device=device)
 
             #obtain pair indices
             n = 5*N
@@ -63,8 +62,7 @@ class SWIMLayer(FittableModule):
             delta = torch.randint(1, N, size=(n,), dtype=torch.int32, device=device)
             idx2 = (idx1 + delta) % N
             dx = X[idx2] - X[idx1]
-            dists = torch.linalg.norm(dx, axis=1, keepdims=True)
-            dists = torch.maximum(dists, EPS)
+            dists = torch.linalg.norm(dx, axis=1, keepdims=True).clamp(min=self.epsilon)
             
             if self.sampling_method=="gradient":
                 #calculate 'gradients'
@@ -72,7 +70,7 @@ class SWIMLayer(FittableModule):
                 y_norm = torch.linalg.norm(dy, axis=1, keepdims=True) #NOTE 2023 paper uses ord=inf instead of ord=2
                 grad = (y_norm / dists).reshape(-1) 
                 p = grad/grad.sum()
-                print(p.min()) # TODO THIS CANNOT GET TOO SMALL? or?
+                torch.set_printoptions(precision=20)
             elif self.sampling_method=="uniform":
                 p = torch.ones(n, dtype=dtype, device=device) / n
             else:

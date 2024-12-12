@@ -148,12 +148,8 @@ class BaseGRFRBoost(FittableModule):
             X0 = X
             X = self.upscale(X0)
             for randfeat_layer, ghat_layer in zip(self.random_feature_layers, self.ghat_boosting_layers):
-                # print("X", X.shape)
-                # print("X0", X0.shape)
                 F = randfeat_layer(X, X0)
-                # print("F", F.shape)
                 Ghat = ghat_layer(F)
-                # print("Ghat", Ghat.shape)
                 X = X + self.boost_lr * Ghat
             # Top level regressor
             return self.top_level_modules[-1](X)
@@ -180,9 +176,9 @@ class RandomFeatureLayer(nn.Module, abc.ABC):
 class RandFeatLayer(RandomFeatureLayer):
     def __init__(self, 
                  in_dim: int,
-                 hidden_dim: int = 128,
-                 randfeat_xt_dim: int = 128,
-                 randfeat_x0_dim: int = 128,
+                 hidden_dim: int,
+                 randfeat_xt_dim: int,
+                 randfeat_x0_dim: int,
                  feature_type : Literal["iid", "SWIM"] = "SWIM",
                  ):
         self.hidden_dim = hidden_dim
@@ -367,6 +363,7 @@ class GreedyRFRBoostRegressor(BaseGRFRBoost):
         # if no upscale, set hidden_dim to in_dim
         if upscale_type == "identity":
             self.hidden_dim = in_dim
+            hidden_dim = in_dim
         upscale = Upscale(in_dim, hidden_dim, upscale_type)
 
         # top level regressors
@@ -423,6 +420,7 @@ class GradientRFRBoostRegressor(BaseGRFRBoost):
         # if no upscale, set hidden_dim to in_dim
         if upscale_type == "identity":
             self.hidden_dim = in_dim
+            hidden_dim = in_dim
         upscale = Upscale(in_dim, hidden_dim, upscale_type)
 
         # top level regressors
@@ -474,13 +472,12 @@ def line_search_cross_entropy(n_classes, cls, X, y, G_hat):
 
     with torch.enable_grad():
         alpha = torch.tensor([0.0], requires_grad=True, device=X.device, dtype=X.dtype)
-        optimizer = torch.optim.LBFGS([alpha])
+        optimizer = torch.optim.LBFGS([alpha], lr=1.0)
         def closure():
             optimizer.zero_grad()
             logits = cls(X + alpha * G_hat)
-            loss = loss_fn(logits, y_labels)
+            loss = loss_fn(logits, y_labels) #+ alpha**2
             loss.backward()
-            print("linesearch loss", loss)
             return loss
         optimizer.step(closure)
 
@@ -516,16 +513,25 @@ class GhatGradientLayerCrossEntropy(GhatBoostingLayer):
             probs = nn.functional.sigmoid(auxiliary_cls(Xt))
         else:
             probs = nn.functional.softmax(auxiliary_cls(Xt), dim=1)
+
         G = (y - probs) @ auxiliary_cls.linear.weight
         N = y.size(0)
-        G = G / torch.norm(G) * N**0.5
+        # print("G norm", torch.norm(G))
+        # print("average G norm", torch.norm(G) / N)
+        # print("G pre norm", G)
+        # G = G / (torch.norm(G) / N**0.5).clamp(min=0.001)
+        G = G / (torch.norm(G) / N).clamp(min=0.001)
+        # print("G after norm", G)
+        # print()
 
         # fit to negative gradient (finding functional direction)
         Ghat = self.ridge.fit_transform(F, G)
 
         # line search closed form risk minimization of R(W_t, Phi_{t+1})
         self.linesearch = line_search_cross_entropy(
-            self.n_classes, auxiliary_cls, Xt, y, Ghat)
+            self.n_classes, auxiliary_cls, Xt, y, Ghat
+            )
+        #print("linesearch", self.linesearch)
         return Ghat * self.linesearch
     
 
@@ -582,6 +588,8 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
         # if no upscale, set hidden_dim to in_dim
         if upscale_type == "identity":
             self.hidden_dim = in_dim
+            hidden_dim = in_dim
+
         upscale = Upscale(in_dim, hidden_dim, upscale_type)
 
         # auxiliary classifiers
