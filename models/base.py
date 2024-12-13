@@ -29,7 +29,7 @@ class FittableModule(nn.Module):
         super(FittableModule, self).__init__()
     
 
-    def fit(self, X: Tensor, y: Tensor):
+    def fit(self, X: Tensor, y: Tensor, **kwargs):
         """Fits the model given training data X and targets y.
 
         Args:
@@ -61,7 +61,7 @@ def make_fittable(module_class: Type[nn.Module]) -> Type[FittableModule]:
             FittableModule.__init__(self)
             module_class.__init__(self, *args, **kwargs)
         
-        def fit(self, X: Tensor, y: Tensor):
+        def fit(self, X: Tensor, y: Tensor, **kwargs):
             self.to(X.device)
             return self
         
@@ -94,7 +94,7 @@ class RidgeCVModule(FittableModule):
         self.b = None
         self._alpha = None
 
-    def fit(self, X: Tensor, y: Tensor):
+    def fit(self, X: Tensor, y: Tensor, **kwargs):
         """Fit the RidgeCV model with ALOOCV"""
         self.W, self.b, self._alpha = fit_ridge_ALOOCV(X, y, alphas=self.alphas)
         return self
@@ -111,7 +111,7 @@ class RidgeModule(FittableModule):
         self.W = None
         self.b = None
     
-    def fit(self, X: Tensor, y: Tensor):
+    def fit(self, X: Tensor, y: Tensor, **kwargs):
         """Fit the Ridge model with a fixed l2_reg"""
         X_mean = X.mean(dim=0, keepdim=True)
         y_mean = y.mean(dim=0, keepdim=True)
@@ -141,7 +141,7 @@ class LogisticRegressionSGD(FittableModule):
         self.num_epochs = num_epochs
         self.lr = lr
 
-    def fit(self, X: Tensor, y: Tensor):
+    def fit(self, X: Tensor, y: Tensor, **kwargs):
         # Determine input and output dimensions
         input_dim = X.size(1)
         if y.dim() > 1 and y.size(1) > 1:
@@ -196,12 +196,14 @@ class LogisticRegression(FittableModule):
         self.l2_lambda = l2_lambda
         self.lr = lr
         self.max_iter = max_iter
+        self.linear = None
 
 
     def fit(self, 
             X: Tensor, 
             y: Tensor,
-            init_W_b: Optional[Tuple[Tensor, Tensor]] = None,
+            init_nnlinear: Optional[nn.Linear] = None,
+            **kwargs
             ):
         """Fits a logistic regression model with L2 regularization
         via the LBFGS method.
@@ -209,7 +211,7 @@ class LogisticRegression(FittableModule):
         Args:
             X (Tensor): Training data, shape (N, D).
             y (Tensor): Training targets, shape (N, d).
-            init_W_b (Tuple[Tensor, Tensor], optional): Initial weights and bias. Defaults to None."""
+            init_nnlinear (Optional[nn.Linear]): Initial weights and bias to use. Defaults to None."""
 
         D = X.size(1)
         if self.n_classes > 2:
@@ -229,10 +231,9 @@ class LogisticRegression(FittableModule):
             y_labels = y
 
         # Initialize weights and bias
-        if init_W_b is not None:
-            W, b = init_W_b
-            self.linear.weight.data = W
-            self.linear.bias.data = b
+        if init_nnlinear is not None:
+            self.linear.weight.data = init_nnlinear.weight.data.clone()
+            self.linear.bias.data = init_nnlinear.bias.data.clone()
         
         with torch.enable_grad():
             # Optimize

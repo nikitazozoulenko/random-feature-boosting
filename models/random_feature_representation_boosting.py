@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.optim
 import torch.utils.data
 from torch import Tensor
+import torchmin
 
 from models.sandwiched_least_squares import sandwiched_LS_dense, sandwiched_LS_diag, sandwiched_LS_scalar
 from models.swim import SWIMLayer
@@ -91,6 +92,8 @@ class BaseGRFRBoost(FittableModule):
             top_level_modules: List[FittableModule],
             random_feature_layers: List[RandomFeatureLayer],
             ghat_boosting_layers: List[GhatBoostingLayer],
+            boost_lr: float = 1.0,
+            use_batchnorm: bool = True,
             ):
         """
         Base class for Greedy Random Feature Boosting.
@@ -98,12 +101,20 @@ class BaseGRFRBoost(FittableModule):
         for simplicity. We only use the topmost one for prediction.
         """
         super(BaseGRFRBoost, self).__init__()
+        self.boost_lr = boost_lr
 
         self.upscale = upscale # simple upscale layer, same for everyone
         self.top_level_modules = nn.ModuleList(top_level_modules) # either ridge, or multiclass logistic, or binary logistic
         self.random_feature_layers = nn.ModuleList(random_feature_layers) # random features, same for everyone
         self.ghat_boosting_layers = nn.ModuleList(ghat_boosting_layers) # functional gradient boosting layers
-
+        if not use_batchnorm:
+            self.batchnorms = nn.ModuleList([Identity() for _ in range(len(ghat_boosting_layers))])
+        else:
+            self.batchnorms = nn.ModuleList([nn.BatchNorm1d(ghat_boosting_layers[-1].hidden_dim,
+                                                            momentum=1, affine=False,
+                                                            track_running_stats=False) 
+                                             for _ in range(len(ghat_boosting_layers))])
+            
 
     def fit(self, X: Tensor, y: Tensor):
         """Fits the Random Feature Representation Boosting model.
@@ -132,8 +143,9 @@ class BaseGRFRBoost(FittableModule):
                 # Step 2: Greedily or Gradient boost to minimize R(W_t, Phi_t + Delta F)
                 Ghat = self.ghat_boosting_layers[t].fit_transform(F, X, y, self.top_level_modules[t])
                 X = X + self.boost_lr * Ghat
+                X = self.batchnorms[t](X)
                 # Step 3: Learn top level classifier W_t
-                self.top_level_modules[t+1].fit(X, y)
+                self.top_level_modules[t+1].fit(X, y, init_nnlinear=self.top_level_modules[t].linear)
 
         return self
 
@@ -147,10 +159,13 @@ class BaseGRFRBoost(FittableModule):
             #upscale
             X0 = X
             X = self.upscale(X0)
-            for randfeat_layer, ghat_layer in zip(self.random_feature_layers, self.ghat_boosting_layers):
+            for randfeat_layer, ghat_layer, batchnorm in zip(self.random_feature_layers, 
+                                                             self.ghat_boosting_layers,
+                                                             self.batchnorms):
                 F = randfeat_layer(X, X0)
                 Ghat = ghat_layer(F)
                 X = X + self.boost_lr * Ghat
+                X = batchnorm(X)
             # Top level regressor
             return self.top_level_modules[-1](X)
         
@@ -472,16 +487,28 @@ def line_search_cross_entropy(n_classes, cls, X, y, G_hat):
 
     with torch.enable_grad():
         alpha = torch.tensor([0.0], requires_grad=True, device=X.device, dtype=X.dtype)
-        optimizer = torch.optim.LBFGS([alpha], lr=1.0)
-        def closure():
-            optimizer.zero_grad()
-            logits = cls(X + alpha * G_hat)
-            loss = loss_fn(logits, y_labels) #+ alpha**2
-            loss.backward()
-            return loss
-        optimizer.step(closure)
 
-    return alpha.detach().item()
+        def closure(a):
+            logits = cls(X + a * G_hat)
+            loss = loss_fn(logits, y_labels)
+            return loss
+
+        result = torchmin.minimize(closure, alpha, method='newton-exact')
+        #print(result)
+
+        
+        # optimizer = torch.optim.LBFGS([alpha], lr=1.0)
+        # def closure():
+        #     optimizer.zero_grad()
+        #     logits = cls(X + alpha * G_hat)
+        #     loss = loss_fn(logits, y_labels) #+ alpha**2
+        #     loss.backward()
+        #     return loss
+        # optimizer.step(closure)
+
+
+
+    return result.x.detach().item()
 
 
 
@@ -519,7 +546,7 @@ class GhatGradientLayerCrossEntropy(GhatBoostingLayer):
         # print("G norm", torch.norm(G))
         # print("average G norm", torch.norm(G) / N)
         # print("G pre norm", G)
-        # G = G / (torch.norm(G) / N**0.5).clamp(min=0.001)
+        #G = G / (torch.norm(G) / N**0.5).clamp(min=0.001)
         G = G / (torch.norm(G) / N).clamp(min=0.001)
         # print("G after norm", G)
         # print()
@@ -531,6 +558,7 @@ class GhatGradientLayerCrossEntropy(GhatBoostingLayer):
         self.linesearch = line_search_cross_entropy(
             self.n_classes, auxiliary_cls, Xt, y, Ghat
             )
+
         #print("linesearch", self.linesearch)
         return Ghat * self.linesearch
     
@@ -555,6 +583,7 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
                  ghat_ridge_solver: Literal["lbfgs", "analytic"] = "analytic", #TODO not currently supported
                  lbfgs_lr: float = 1.0,
                  lbfgs_max_iter: int = 100,
+                 use_batchnorm: bool = True,
                  ):
         """TODO
 
@@ -572,6 +601,7 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
             upscale_type (Literal[&quot;iid&quot;, &quot;SWIM&quot;, &quot;identity&quot;], optional): _description_. Defaults to "iid".
             ghat_ridge_solver (Literal[&quot;lbfgs&quot;, &quot;analytic&quot;], optional): _description_. Defaults to "analytic".
             lbfgs_max_iter (int, optional): _description_. Defaults to 100.
+            use_batchnorm (bool, optional): _description_. Defaults to True.
         """
         self.in_dim = in_dim
         self.n_classes = n_classes
@@ -581,7 +611,6 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
         self.randfeat_x0_dim = randfeat_x0_dim
         self.l2_cls = l2_cls
         self.l2_ghat = l2_ghat
-        self.boost_lr = boost_lr
         self.feature_type = feature_type
         self.upscale_type = upscale_type
 
@@ -612,6 +641,6 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
         ]
 
         super(GradientRFRBoostClassifier, self).__init__(
-            upscale, top_level_classifiers, random_feature_layers, ghat_boosting_layers
+            upscale, top_level_classifiers, random_feature_layers, ghat_boosting_layers, boost_lr, use_batchnorm
         )
 
