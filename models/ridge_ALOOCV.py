@@ -38,8 +38,8 @@ def fit_ridge_ALOOCV(
     
     # Convert alphas to tensor on the same device as X
     alphas = torch.tensor(alphas, device=X.device, dtype=X.dtype) * N  # Shape (n_alphas,)
-    eigvecs, eigvals, _ = torch.linalg.svd(X.T @ X, full_matrices=False)  # eigvals: (D,), eigvecs: (D, D) NOTE linalg.eigh throws errors for cuda due to cuBLAS solver. date=2024
-    #eigvals, eigvecs = torch.linalg.eigh(X.T @ X)  # eigvals: (D,), eigvecs: (D, D)
+    #eigvecs, eigvals, _ = torch.linalg.svd(X.T @ X, full_matrices=False)  # eigvals: (D,), eigvecs: (D, D) NOTE linalg.eigh throws errors for cuda due to cuBLAS solver. date=2024
+    eigvals, eigvecs = torch.linalg.eigh(X.T @ X)  # eigvals: (D,), eigvecs: (D, D)
     
     # Project y onto the eigenspace
     XTy = X.T @ y  # Shape (D, p)
