@@ -26,22 +26,19 @@ openml.config.set_root_cache_directory(cache_path)
 ##### Dataset Code  #####  |
 #########################  V
 
-openML_reg_ids_noCat = np.array([ 
-    44957,44959,44960,44963,44964,44965,44969,44970,
-    44971,44972,44973,44975,44976,44977,44978,44980,
-    44981,44983,44994,45402
+openML_reg_ids = np.array([
+    41021, 44956, 44957, 44958, 44959, 44960, 44962, 44963, 
+    44964, 44965, 44966, 44967, 44969, 44970, 44971, 44972, 
+    44973, 44974, 44975, 44976, 44977, 44978, 44979, 44980, 
+    44981, 44983, 44984, 44987, 44989, 44990, 44992, 44993, 
+    44994, 45012, 45402
     ])
-openML_cls_ids_nFeatsLess500_noCat_noMissing = np.array([
-    6,11,12,14,16,18,22,28,32,37,44,54,182,458,1049,
-    1050,1063,1067,1068,1462,1464,1475,1487,1489,1494,
-    1497,1501,1510,4538,23517,40499,40979,40982,40983,
-    40984,40994,41027
-    ]) # https://www.openml.org/search?type=study&study_type=task&id=99&sort=runs_included
-
 
 def np_load_openml_dataset(
         dataset_id: int, 
         regression_or_classification: str = "regression",
+        max_samples: int = 5000,
+        seed: int = 42,
         ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Downloads the openML dataset and normalizes it.
@@ -54,25 +51,57 @@ def np_load_openml_dataset(
     # Fetch dataset from OpenML by its ID
     dataset = openml.datasets.get_dataset(dataset_id)
     df, _, categorical_indicator, attribute_names = dataset.get_data()
+    
+    # Dataset 44962 has categorical month and day
+    if dataset_id == 44962:
+        categorical_indicator[2:4] = [True, True]
+        df['month'] = df['month'].astype('category')
+        df['day'] = df['day'].astype('category')
+    elif dataset_id == 44992:
+        idx = df.columns.get_loc('GpuNumberOfExecutionUnits')
+        df = df.drop(columns=['GpuNumberOfExecutionUnits'])
+        categorical_indicator = np.delete(categorical_indicator, idx)
+
+    # Replace missing values with the median for numerical columns
+    for col in df.columns:
+        if df[col].dtype.name == 'category':
+            df[col] = df[col].fillna(df[col].mode()[0])
+        else:
+            df[col] = df[col].fillna(df[col].median())
+    #df = df.dropna() # other option
+    
+    # One-hot encode categorical variables
+    df = pd.get_dummies(df, columns=df.columns[categorical_indicator])
+    
+    # Separate target variable
     y = np.array(df.pop(dataset.default_target_attribute))
     X = np.array(df).astype(np.float32)
+    
+    # Set seed and shuffle data
+    np.random.seed(seed)
+    indices = np.random.permutation(X.shape[0])
+    X = X[indices]
+    y = y[indices]
+    
+    # Take the first 'max_samples' rows
+    X = X[:max_samples]
+    y = y[:max_samples]
 
-    #normalize
+    # Normalize
     X = X - X.mean(axis=0, keepdims=True)
     X = X / (X.std(axis=0, keepdims=True) + 1e-5)
     X = np.clip(X, -3, 3)
     if regression_or_classification == "regression":
-        y = y - y.mean()
-        y = y / (y.std() + 1e-5)
-        y = np.clip(y, -3, 3)
-        y = y.astype(np.float32)
         if y.ndim == 1:
             y = y[:, None]
+        y = y - y.mean(axis=0, keepdims=True)
+        y = y / (y.std(axis=0, keepdims=True) + 1e-5)
+        y = np.clip(y, -3, 3)
+        y = y.astype(np.float32)
     else:
         y = pd.get_dummies(y).values.astype(np.float32)
 
     return X, y
-
 
 
 def pytorch_load_openml_dataset(
@@ -87,7 +116,6 @@ def pytorch_load_openml_dataset(
     X, y = np_load_openml_dataset(dataset_id, regression_or_classification)
     X = torch.from_numpy(X).to(device)
     y = torch.from_numpy(y).to(device)
-    
     return X, y
 
 
@@ -289,6 +317,7 @@ def save_experiments_json(
         experiments: Dict[str, Dict[str, Dict[str, Any]]],
         save_path: str,
         ):
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     with open(save_path, 'w') as f:
         json.dump(experiments, f, indent=4)
 
@@ -401,7 +430,7 @@ def run_all_openML_with_model(
     return experiments
 
 
-# ###### usage example ######
+# ###### usage example ###### TODO outdated
 # run_all_openML_with_model(
 #     openML_cls_ids_nFeatsLess500_noCat_noMissing[0:2], 
 #     evaluate_LogisticRegression,

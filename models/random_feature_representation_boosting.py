@@ -145,7 +145,7 @@ class BaseGRFRBoost(FittableModule):
                 X = X + self.boost_lr * Ghat
                 X = self.batchnorms[t](X)
                 # Step 3: Learn top level classifier W_t
-                self.top_level_modules[t+1].fit(X, y, init_nnlinear=self.top_level_modules[t].linear)
+                self.top_level_modules[t+1].fit(X, y, init_top=self.top_level_modules[t])
 
         return self
 
@@ -351,6 +351,7 @@ class GreedyRFRBoostRegressor(BaseGRFRBoost):
                  feature_type : Literal["iid", "SWIM"] = "SWIM",
                  upscale_type: Literal["iid", "SWIM", "identity"] = "iid",
                  ridge_solver: Literal["iterative", "analytic"] = "analytic", # TODO not currently implemented
+                 use_batchnorm: bool = True,
                  ):
         """
         Tabular Greedy Random Feaute Boosting.
@@ -400,7 +401,7 @@ class GreedyRFRBoostRegressor(BaseGRFRBoost):
         ]
 
         super(GreedyRFRBoostRegressor, self).__init__(
-            upscale, top_level_regs, random_feature_layers, ghat_boosting_layers
+            upscale, top_level_regs, random_feature_layers, ghat_boosting_layers, boost_lr, use_batchnorm
         )
 
 
@@ -419,6 +420,7 @@ class GradientRFRBoostRegressor(BaseGRFRBoost):
                  feature_type : Literal["iid", "SWIM"] = "SWIM",
                  upscale_type: Literal["iid", "SWIM", "identity"] = "iid",
                  ghat_ridge_solver: Literal["iterative", "analytic"] = "analytic", #TODO not currently supported
+                 use_batchnorm: bool = True,
                  ):
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -428,7 +430,6 @@ class GradientRFRBoostRegressor(BaseGRFRBoost):
         self.randfeat_x0_dim = randfeat_x0_dim
         self.l2_reg = l2_reg
         self.l2_ghat = l2_ghat
-        self.boost_lr = boost_lr
         self.feature_type = feature_type
         self.upscale_type = upscale_type
 
@@ -454,7 +455,7 @@ class GradientRFRBoostRegressor(BaseGRFRBoost):
         ]
 
         super(GradientRFRBoostRegressor, self).__init__(
-            upscale, top_level_regs, random_feature_layers, ghat_boosting_layers
+            upscale, top_level_regs, random_feature_layers, ghat_boosting_layers, boost_lr, use_batchnorm
         )
 
 
@@ -494,20 +495,6 @@ def line_search_cross_entropy(n_classes, cls, X, y, G_hat):
             return loss
 
         result = torchmin.minimize(closure, alpha, method='newton-exact')
-        #print(result)
-
-        
-        # optimizer = torch.optim.LBFGS([alpha], lr=1.0)
-        # def closure():
-        #     optimizer.zero_grad()
-        #     logits = cls(X + alpha * G_hat)
-        #     loss = loss_fn(logits, y_labels) #+ alpha**2
-        #     loss.backward()
-        #     return loss
-        # optimizer.step(closure)
-
-
-
     return result.x.detach().item()
 
 

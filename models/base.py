@@ -202,7 +202,7 @@ class LogisticRegression(FittableModule):
     def fit(self, 
             X: Tensor, 
             y: Tensor,
-            init_nnlinear: Optional[nn.Linear] = None,
+            init_top: Optional[FittableModule] = None,
             **kwargs
             ):
         """Fits a logistic regression model with L2 regularization
@@ -211,7 +211,7 @@ class LogisticRegression(FittableModule):
         Args:
             X (Tensor): Training data, shape (N, D).
             y (Tensor): Training targets, shape (N, d).
-            init_nnlinear (Optional[nn.Linear]): Initial weights and bias to use. Defaults to None."""
+            init_top (Optional[FittableModule]): Initial weights and bias to use. Defaults to None."""
 
         D = X.size(1)
         if self.n_classes > 2:
@@ -231,9 +231,9 @@ class LogisticRegression(FittableModule):
             y_labels = y
 
         # Initialize weights and bias
-        if init_nnlinear is not None:
-            self.linear.weight.data = init_nnlinear.weight.data.clone()
-            self.linear.bias.data = init_nnlinear.bias.data.clone()
+        if init_top is not None:
+            self.linear.weight.data = init_top.linear.weight.data.clone()
+            self.linear.bias.data = init_top.linear.bias.data.clone()
         
         with torch.enable_grad():
             # Optimize
