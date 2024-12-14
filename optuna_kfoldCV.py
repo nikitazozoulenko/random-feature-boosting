@@ -162,31 +162,36 @@ def get_pytorch_optuna_cv_objective(
         ):
     """The objective to be minimized in Optuna's 'study.optimize(objective, n_trials)' function."""
     
-    params = get_optuna_params(trial)
+    try:
+        params = get_optuna_params(trial)
 
-    inner_cv = KFold(n_splits=k_folds, shuffle=True, random_state=cv_seed)
-    scores = []
-    for inner_train_idx, inner_valid_idx in inner_cv.split(X_train):
-        X_inner_train, X_inner_valid = X_train[inner_train_idx], X_train[inner_valid_idx]
-        y_inner_train, y_inner_valid = y_train[inner_train_idx], y_train[inner_valid_idx]
+        inner_cv = KFold(n_splits=k_folds, shuffle=True, random_state=cv_seed)
+        scores = []
+        for inner_train_idx, inner_valid_idx in inner_cv.split(X_train):
+            X_inner_train, X_inner_valid = X_train[inner_train_idx], X_train[inner_valid_idx]
+            y_inner_train, y_inner_valid = y_train[inner_train_idx], y_train[inner_valid_idx]
 
-        np.random.seed(cv_seed)
-        torch.manual_seed(cv_seed)
-        torch.cuda.manual_seed(cv_seed)
-        model = ModelClass(**params)
-        model.fit(X_inner_train, y_inner_train)
+            np.random.seed(cv_seed)
+            torch.manual_seed(cv_seed)
+            torch.cuda.manual_seed(cv_seed)
+            model = ModelClass(**params)
+            model.fit(X_inner_train, y_inner_train)
 
-        preds = model(X_inner_valid)
-        if regression_or_classification == "classification":
-            preds = torch.argmax(preds, dim=1)
-            gt = torch.argmax(y_inner_valid, dim=1)
-            acc = (preds == gt).float().mean()
-            scores.append(-acc.item()) #score is being minimized in Optuna
-        else:
-            rmse = torch.sqrt(nn.functional.mse_loss(y_inner_valid, preds))
-            scores.append(rmse.item())
+            preds = model(X_inner_valid)
+            if regression_or_classification == "classification":
+                preds = torch.argmax(preds, dim=1)
+                gt = torch.argmax(y_inner_valid, dim=1)
+                acc = (preds == gt).float().mean()
+                scores.append(-acc.item()) #score is being minimized in Optuna
+            else:
+                rmse = torch.sqrt(nn.functional.mse_loss(y_inner_valid, preds))
+                scores.append(rmse.item())
 
-    return np.mean(scores)
+        return np.mean(scores)
+    except (RuntimeError, ValueError, torch._C._LinAlgError) as e:
+        print(f"Error encountered during training: {e}. Returning score 2.0 to optuna")
+        return 2.0 #rmse random guessing is 1.0, and random guessing accuracy is -1/C
+
 
 
 def evaluate_pytorch_model_single_fold(
@@ -220,7 +225,7 @@ def evaluate_pytorch_model_single_fold(
     study.optimize(
         objective, 
         n_trials=n_optuna_trials,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience)]
+        callbacks=[EarlyStoppingCallback(early_stopping_patience)],
         )
 
     #fit model with optimal hyperparams
