@@ -329,6 +329,14 @@ if __name__ == "__main__":
             eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "SWIM", "diag")
         elif model_name == "GreedyRFRBoostScalar":
             eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "SWIM", "scalar")
+        elif model_name == "GradientRFRBoost upscaleiid":
+            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "iid")
+        elif model_name == "GreedyRFRBoostDense upscaleiid":
+            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "dense")
+        elif model_name == "GreedyRFRBoostDiag upscaleiid":
+            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "diag")
+        elif model_name == "GreedyRFRBoostScalar upscaleiid":
+            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "scalar")
         else:
             raise ValueError(f"Unknown model name: {model_name}")
         #TODO implement random feature boosted xgboost
