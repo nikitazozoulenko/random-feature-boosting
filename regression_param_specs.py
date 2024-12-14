@@ -318,6 +318,8 @@ if __name__ == "__main__":
         # RFNN
         elif model_name == "RandomFeatureNetwork":
             eval_fun = get_RandomFeatureNetwork_eval_fun("SWIM")
+        elif model_name == "RandomFeatureNetwork iid":
+            eval_fun = get_RandomFeatureNetwork_eval_fun("iid")
         # random feature boosting models
         elif model_name == "GradientRFRBoost":
             eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "SWIM")
