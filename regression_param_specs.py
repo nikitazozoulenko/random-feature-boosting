@@ -318,7 +318,7 @@ if __name__ == "__main__":
         # RFNN
         elif model_name == "RandomFeatureNetwork":
             eval_fun = get_RandomFeatureNetwork_eval_fun("SWIM")
-        elif model_name == "RandomFeatureNetwork iid":
+        elif model_name == "RandomFeatureNetwork_iid":
             eval_fun = get_RandomFeatureNetwork_eval_fun("iid")
         # random feature boosting models
         elif model_name == "GradientRFRBoost":
@@ -331,13 +331,13 @@ if __name__ == "__main__":
             eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "SWIM", "diag")
         elif model_name == "GreedyRFRBoostScalar":
             eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "SWIM", "scalar")
-        elif model_name == "GradientRFRBoost upscaleiid":
+        elif model_name == "GradientRFRBoost_upscaleiid":
             eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "iid")
-        elif model_name == "GreedyRFRBoostDense upscaleiid":
+        elif model_name == "GreedyRFRBoostDense_upscaleiid":
             eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "dense")
-        elif model_name == "GreedyRFRBoostDiag upscaleiid":
+        elif model_name == "GreedyRFRBoostDiag_upscaleiid":
             eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "diag")
-        elif model_name == "GreedyRFRBoostScalar upscaleiid":
+        elif model_name == "GreedyRFRBoostScalar_upscaleiid":
             eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "scalar")
         else:
             raise ValueError(f"Unknown model name: {model_name}")
