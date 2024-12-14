@@ -49,6 +49,7 @@ def np_load_openml_dataset(
     one-hot (N,C) for classification.
     """
     # Fetch dataset from OpenML by its ID
+    dataset_id = int(dataset_id)
     dataset = openml.datasets.get_dataset(dataset_id)
     df, _, categorical_indicator, attribute_names = dataset.get_data()
     
