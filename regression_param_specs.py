@@ -184,7 +184,7 @@ def evaluate_Ridge(
         ):
     ModelClass = RidgeModule
     get_optuna_params = lambda trial : {
-        "l2_reg": trial.suggest_float("l2_reg", 1e-7, 1.0, log=True),
+        "l2_reg": trial.suggest_float("l2_reg", 1e-5, 1.0, log=True),
     }
 
     return evaluate_pytorch_model_kfoldcv(
