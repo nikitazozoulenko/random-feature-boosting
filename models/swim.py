@@ -17,6 +17,7 @@ class SWIMLayer(FittableModule):
                  activation: nn.Module = nn.Tanh(),
                  epsilon: float = 0.01,
                  sampling_method: Literal['uniform', 'gradient'] = 'gradient',
+                 c: float = 0.5
                  ):
         """Dense MLP layer with pair sampled weights (uniform or gradient-weighted).
 
@@ -26,6 +27,7 @@ class SWIMLayer(FittableModule):
             activation (nn.Module): Activation function.
             epsilon (float): Small constant to avoid division by zero.
             sampling_method (str): Pair sampling method. Uniform or gradient-weighted.
+            c (float): Scaling factor, ie the value of (A x_i + b)_i in the SWIM paper.
         """
         super(SWIMLayer, self).__init__()
         self.in_dim = in_dim
@@ -33,6 +35,7 @@ class SWIMLayer(FittableModule):
         self.activation = activation
         self.epsilon = epsilon
         self.sampling_method = sampling_method
+        self.c = c
 
         self.dense = nn.Linear(in_dim, out_dim)
 
@@ -87,9 +90,9 @@ class SWIMLayer(FittableModule):
             dists = dists[selected_idx]
 
             #define weights and biases
-            weights = dx / (dists**2)
-            biases = -torch.sum(weights * X[idx1], axis=1) - 0.5
-            #biases = -torch.einsum('ij,ij->i', weights, X[idx1]) - 0.5
+            weights = 2*self.c * dx / (dists**2)
+            biases = -torch.sum(weights * X[idx1], axis=1) - self.c # TODO check sign
+            #biases = -torch.einsum('ij,ij->i', weights, X[idx1]) - self.c
             self.dense.weight.data = weights
             self.dense.bias.data = biases
 

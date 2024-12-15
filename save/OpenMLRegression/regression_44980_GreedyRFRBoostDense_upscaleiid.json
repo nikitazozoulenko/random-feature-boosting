@@ -1,0 +1,106 @@
+{
+    "44980": {
+        "GreedyRFRBoostDense_upscaleiid": {
+            "score_train": [
+                0.2493111789226532,
+                0.26365816593170166,
+                0.24074983596801758,
+                0.23821428418159485,
+                0.25656917691230774
+            ],
+            "score_test": [
+                0.3380073308944702,
+                0.33725860714912415,
+                0.3325200378894806,
+                0.34560099244117737,
+                0.3563569486141205
+            ],
+            "t_fit": [
+                5.136687994003296,
+                3.633246872574091,
+                5.150965563952923,
+                4.066820785403252,
+                4.032243218272924
+            ],
+            "t_inference": [
+                1.3188861161470413,
+                0.8890900500118732,
+                1.3587296716868877,
+                0.8070771098136902,
+                1.0341091677546501
+            ],
+            "hyperparams": [
+                {
+                    "in_dim": 8,
+                    "out_dim": 1,
+                    "feature_type": "SWIM",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "n_layers": 10,
+                    "hidden_dim": 464,
+                    "l2_reg": 0.5617704894067823,
+                    "l2_ghat": 1.737655080012162e-07,
+                    "boost_lr": 0.8
+                },
+                {
+                    "in_dim": 8,
+                    "out_dim": 1,
+                    "feature_type": "SWIM",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "n_layers": 8,
+                    "hidden_dim": 400,
+                    "l2_reg": 0.6447308557364295,
+                    "l2_ghat": 2.2277908774984662e-07,
+                    "boost_lr": 0.6
+                },
+                {
+                    "in_dim": 8,
+                    "out_dim": 1,
+                    "feature_type": "SWIM",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "n_layers": 10,
+                    "hidden_dim": 496,
+                    "l2_reg": 0.17301758305495998,
+                    "l2_ghat": 1.9130100632327716e-07,
+                    "boost_lr": 1.0
+                },
+                {
+                    "in_dim": 8,
+                    "out_dim": 1,
+                    "feature_type": "SWIM",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "n_layers": 10,
+                    "hidden_dim": 240,
+                    "l2_reg": 0.038540854740662836,
+                    "l2_ghat": 6.286651360786729e-07,
+                    "boost_lr": 0.9
+                },
+                {
+                    "in_dim": 8,
+                    "out_dim": 1,
+                    "feature_type": "SWIM",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "n_layers": 8,
+                    "hidden_dim": 464,
+                    "l2_reg": 0.22994854665024153,
+                    "l2_ghat": 2.4709696613368127e-07,
+                    "boost_lr": 0.8
+                }
+            ]
+        }
+    }
+}

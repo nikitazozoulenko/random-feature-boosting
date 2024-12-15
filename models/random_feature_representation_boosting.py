@@ -20,20 +20,32 @@ from models.base import FittableModule, RidgeModule, FittableSequential, Identit
 ################# Base classes for Random Feature Boosting #################
 ############################################################################
 
+class ScaleLayer(nn.Module):
+    def __init__(self, scale):
+        super(ScaleLayer, self).__init__()
+        self.scale = scale
+
+    def forward(self, x):
+        return x * self.scale
+
+
 def create_layer(
         in_dim: int, 
         out_dim: int, 
         layer_type: Literal["iid", "SWIM", "identity"],
-        #iid_factor = None
-        #swim_epsilon = None
-        #swim_c = None
+        iid_scale: float = 1.0,
+        SWIM_scale: float = 0.5,
         ):
     """Takes in the input and output dimensions and returns 
     a layer of the specified type."""
     if layer_type == "iid":
-        layer = FittableSequential( nn.Linear(in_dim, out_dim), nn.Tanh() )
+        layer = FittableSequential(
+            nn.Linear(in_dim, out_dim), 
+            ScaleLayer(iid_scale), 
+            nn.Tanh()
+        )
     elif layer_type == "SWIM":
-        layer = SWIMLayer(in_dim, out_dim, activation=nn.Tanh())
+        layer = SWIMLayer(in_dim, out_dim, activation=nn.Tanh(), c=SWIM_scale)
     elif layer_type == "identity":
         layer = Identity()
     else:
@@ -41,15 +53,18 @@ def create_layer(
     return layer
 
 
+
 class Upscale(FittableModule):
     def __init__(self,
                  in_dim: int,
                  hidden_dim: int = 128,
                  upscale_type: Literal["iid", "SWIM", "identity"] = "iid",
+                 iid_scale: float = 1.0,
+                 SWIM_scale: float = 0.5,
                  ):
         self.upscale_type = upscale_type
         super(Upscale, self).__init__()
-        self.upscale = create_layer(in_dim, hidden_dim, upscale_type)
+        self.upscale = create_layer(in_dim, hidden_dim, upscale_type, iid_scale, SWIM_scale)
     
     def fit(self, X: Tensor, y: Tensor):
         self.upscale.fit(X, y)
@@ -194,7 +209,9 @@ class RandFeatLayer(RandomFeatureLayer):
                  hidden_dim: int,
                  randfeat_xt_dim: int,
                  randfeat_x0_dim: int,
-                 feature_type : Literal["iid", "SWIM"] = "SWIM",
+                 feature_type : Literal["iid", "SWIM"],
+                 iid_scale: float = 1.0,
+                 SWIM_scale: float = 0.5,
                  ):
         self.hidden_dim = hidden_dim
         self.randfeat_xt_dim = randfeat_xt_dim
@@ -202,9 +219,9 @@ class RandFeatLayer(RandomFeatureLayer):
         super(RandFeatLayer, self).__init__()
         
         if randfeat_xt_dim > 0:
-            self.Ft = create_layer(hidden_dim, randfeat_xt_dim, feature_type)
+            self.Ft = create_layer(hidden_dim, randfeat_xt_dim, feature_type, iid_scale, SWIM_scale)
         if randfeat_x0_dim > 0:
-            self.F0 = create_layer(in_dim, randfeat_x0_dim, feature_type)
+            self.F0 = create_layer(in_dim, randfeat_x0_dim, feature_type, iid_scale, SWIM_scale)
 
 
     def fit(self, Xt: Tensor, X0: Tensor, y: Tensor) -> Tensor:
@@ -352,6 +369,8 @@ class GreedyRFRBoostRegressor(BaseGRFRBoost):
                  upscale_type: Literal["iid", "SWIM", "identity"] = "iid",
                  ridge_solver: Literal["iterative", "analytic"] = "analytic", # TODO not currently implemented
                  use_batchnorm: bool = True,
+                 iid_scale: float = 1.0,
+                 SWIM_scale: float = 0.5,
                  ):
         """
         Tabular Greedy Random Feaute Boosting.
@@ -380,7 +399,7 @@ class GreedyRFRBoostRegressor(BaseGRFRBoost):
         if upscale_type == "identity":
             self.hidden_dim = in_dim
             hidden_dim = in_dim
-        upscale = Upscale(in_dim, hidden_dim, upscale_type)
+        upscale = Upscale(in_dim, hidden_dim, upscale_type, iid_scale, SWIM_scale)
 
         # top level regressors
         top_level_regs = [RidgeModule(l2_reg) for _ in range(n_layers+1)]
@@ -390,7 +409,8 @@ class GreedyRFRBoostRegressor(BaseGRFRBoost):
             randfeat_xt_dim = hidden_dim
             randfeat_x0_dim = 0
         random_feature_layers = [
-            RandFeatLayer(in_dim, hidden_dim, randfeat_xt_dim, randfeat_x0_dim, feature_type)
+            RandFeatLayer(in_dim, hidden_dim, randfeat_xt_dim, randfeat_x0_dim, feature_type,
+                          iid_scale, SWIM_scale)
             for _ in range(n_layers)
         ]
 
@@ -421,6 +441,8 @@ class GradientRFRBoostRegressor(BaseGRFRBoost):
                  upscale_type: Literal["iid", "SWIM", "identity"] = "iid",
                  ghat_ridge_solver: Literal["iterative", "analytic"] = "analytic", #TODO not currently supported
                  use_batchnorm: bool = True,
+                 iid_scale: float = 1.0,
+                 SWIM_scale: float = 0.5,
                  ):
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -437,14 +459,15 @@ class GradientRFRBoostRegressor(BaseGRFRBoost):
         if upscale_type == "identity":
             self.hidden_dim = in_dim
             hidden_dim = in_dim
-        upscale = Upscale(in_dim, hidden_dim, upscale_type)
+        upscale = Upscale(in_dim, hidden_dim, upscale_type, iid_scale, SWIM_scale)
 
         # top level regressors
         top_level_regs = [RidgeModule(l2_reg) for _ in range(n_layers+1)]
 
         # random feature layers
         random_feature_layers = [
-            RandFeatLayer(in_dim, hidden_dim, randfeat_xt_dim, randfeat_x0_dim, feature_type)
+            RandFeatLayer(in_dim, hidden_dim, randfeat_xt_dim, randfeat_x0_dim, feature_type,
+                          iid_scale, SWIM_scale)
             for _ in range(n_layers)
         ]
 
@@ -571,6 +594,8 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
                  lbfgs_lr: float = 1.0,
                  lbfgs_max_iter: int = 100,
                  use_batchnorm: bool = True,
+                 iid_scale: float = 1.0,
+                 SWIM_scale: float = 0.5,
                  ):
         """TODO
 
@@ -606,7 +631,7 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
             self.hidden_dim = in_dim
             hidden_dim = in_dim
 
-        upscale = Upscale(in_dim, hidden_dim, upscale_type)
+        upscale = Upscale(in_dim, hidden_dim, upscale_type, iid_scale, SWIM_scale)
 
         # auxiliary classifiers
         top_level_classifiers = [LogisticRegression(n_classes, l2_cls, lbfgs_lr, lbfgs_max_iter) 
@@ -617,7 +642,8 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
 
         # random feature layers
         random_feature_layers = [
-            RandFeatLayer(in_dim, hidden_dim, randfeat_xt_dim, randfeat_x0_dim, feature_type)
+            RandFeatLayer(in_dim, hidden_dim, randfeat_xt_dim, randfeat_x0_dim, feature_type,
+                          iid_scale, SWIM_scale)
             for _ in range(n_layers)
         ]
 
