@@ -592,7 +592,7 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
                  upscale_type: Literal["iid", "SWIM", "identity"] = "iid",
                  ghat_ridge_solver: Literal["lbfgs", "analytic"] = "analytic", #TODO not currently supported
                  lbfgs_lr: float = 1.0,
-                 lbfgs_max_iter: int = 100,
+                 lbfgs_max_iter: int = 300,
                  use_batchnorm: bool = True,
                  iid_scale: float = 1.0,
                  SWIM_scale: float = 0.5,
