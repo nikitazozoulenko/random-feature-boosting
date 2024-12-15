@@ -44,7 +44,7 @@ def get_GradientRFRBoost_eval_fun(
             "randfeat_xt_dim": trial.suggest_categorical("randfeat_xt_dim", [512]),
             "randfeat_x0_dim": trial.suggest_categorical("randfeat_x0_dim", [512]),
             # Hyperparameters
-            "n_layers": trial.suggest_int("n_layers", 1, 20, log=True),
+            "n_layers": trial.suggest_int("n_layers", 1, 15, log=True),
             "hidden_dim": (
                 trial.suggest_int("hidden_dim", 16, 512, step=32) if upscale_type != "identity"
                 else trial.suggest_categorical("hidden_dim", [X.size(1)])
@@ -95,7 +95,7 @@ def get_GreedyRFRBoost_eval_fun(
             "randfeat_x0_dim": trial.suggest_categorical("randfeat_x0_dim", [512]),
             "sandwich_solver": trial.suggest_categorical("sandwich_solver", [sandwich_solver]),
             # Hyperparameters
-            "n_layers": trial.suggest_int("n_layers", 1, 20, log=True),
+            "n_layers": trial.suggest_int("n_layers", 1, 15, log=True),
             "hidden_dim": (
                 trial.suggest_int("hidden_dim", 16, 512, step=32) if upscale_type != "identity"
                 else trial.suggest_categorical("hidden_dim", [X.size(1)])
@@ -229,7 +229,7 @@ def evaluate_End2End(
         "loss": trial.suggest_categorical("loss", ["mse"]),
         "bottleneck_dim": trial.suggest_categorical("bottleneck_dim", [512]),
         # Hyperparameters
-        "n_blocks": trial.suggest_int("n_blocks", 1, 20),
+        "n_blocks": trial.suggest_int("n_blocks", 1, 15),
         "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, step=32),
         "lr": trial.suggest_float("lr", 1e-7, 1e-2, log=True),
         "end_lr_factor": trial.suggest_float("end_lr_factor", 0.01, 1.0, log=True),

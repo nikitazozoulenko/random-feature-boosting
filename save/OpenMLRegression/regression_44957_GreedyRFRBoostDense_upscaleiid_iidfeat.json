@@ -1,0 +1,111 @@
+{
+    "44957": {
+        "GreedyRFRBoostDense_upscaleiid_iidfeat": {
+            "score_train": [
+                0.21978354454040527,
+                0.14796170592308044,
+                0.21614649891853333,
+                0.16525885462760925,
+                0.21208064258098602
+            ],
+            "score_test": [
+                0.3400794267654419,
+                0.32792583107948303,
+                0.3340737223625183,
+                0.3697943091392517,
+                0.3238641917705536
+            ],
+            "t_fit": [
+                5.536900388076901,
+                4.993216110393405,
+                4.492270641028881,
+                3.7331462930887938,
+                4.4749804604798555
+            ],
+            "t_inference": [
+                0.6365209091454744,
+                0.47684294916689396,
+                0.5109573528170586,
+                0.43343160673975945,
+                0.408859184011817
+            ],
+            "hyperparams": [
+                {
+                    "in_dim": 5,
+                    "out_dim": 1,
+                    "feature_type": "iid",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "n_layers": 19,
+                    "hidden_dim": 304,
+                    "l2_reg": 0.009806044152405522,
+                    "l2_ghat": 0.09042716551185644,
+                    "boost_lr": 0.7,
+                    "iid_scale": 4.256607176094212
+                },
+                {
+                    "in_dim": 5,
+                    "out_dim": 1,
+                    "feature_type": "iid",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "n_layers": 18,
+                    "hidden_dim": 240,
+                    "l2_reg": 0.02022824560009528,
+                    "l2_ghat": 0.1226419560135212,
+                    "boost_lr": 1.0,
+                    "iid_scale": 9.99257487061669
+                },
+                {
+                    "in_dim": 5,
+                    "out_dim": 1,
+                    "feature_type": "iid",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "n_layers": 16,
+                    "hidden_dim": 304,
+                    "l2_reg": 0.007857137298184685,
+                    "l2_ghat": 0.13365497588961409,
+                    "boost_lr": 0.8,
+                    "iid_scale": 4.5920939044392535
+                },
+                {
+                    "in_dim": 5,
+                    "out_dim": 1,
+                    "feature_type": "iid",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "n_layers": 13,
+                    "hidden_dim": 336,
+                    "l2_reg": 0.010840470201594277,
+                    "l2_ghat": 0.04030230836898154,
+                    "boost_lr": 0.9,
+                    "iid_scale": 6.70142049008958
+                },
+                {
+                    "in_dim": 5,
+                    "out_dim": 1,
+                    "feature_type": "iid",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "n_layers": 17,
+                    "hidden_dim": 208,
+                    "l2_reg": 0.009604433699998723,
+                    "l2_ghat": 0.14205853524130443,
+                    "boost_lr": 0.8,
+                    "iid_scale": 5.262110027678245
+                }
+            ]
+        }
+    }
+}
