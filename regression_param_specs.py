@@ -50,7 +50,7 @@ def get_GradientRFRBoost_eval_fun(
                 trial.suggest_int("hidden_dim", 16, 512, step=32) if upscale_type != "identity"
                 else trial.suggest_categorical("hidden_dim", [X.size(1)])
             ),
-            "l2_reg": trial.suggest_float("l2_reg", 1e-3, 10, log=True),
+            "l2_reg": trial.suggest_float("l2_reg", 1e-4, 10, log=True),
             "l2_ghat": trial.suggest_float("l2_ghat", 1e-7, 10, log=True),
             "boost_lr": trial.suggest_float("boost_lr", 0.5, 1.00001, step=0.1),
             "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
@@ -124,6 +124,7 @@ def get_GreedyRFRBoost_eval_fun(
 
 def get_RandomFeatureNetwork_eval_fun(
         feature_type: Literal["iid", "SWIM"] = "SWIM",
+        activation: nn.Module = nn.Tanh(),
         ):
     """Returns a function that evaluates the RandomFeatureNetwork model
     (1 hidden layer random neural network)"""
@@ -144,12 +145,14 @@ def get_RandomFeatureNetwork_eval_fun(
             "in_dim": trial.suggest_categorical("in_dim", [X.size(1)]),
             "out_dim": trial.suggest_categorical("out_dim", [y.size(1)]),
             "upscale_type": trial.suggest_categorical("upscale_type", [feature_type]),
+            "hidden_dim": trial.suggest_categorical("hidden_dim", [512]),
             # Hyperparameters
-            "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, step=32),
             "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
                (trial.suggest_float("SWIM_scale", -1, 2.0) if feature_type == "SWIM" 
                 else trial.suggest_float("iid_scale", 0.1, 10, log=True))
             ),
+            "activation": activation,
+            "l2_reg": trial.suggest_float("l2_reg", 1e-4, 10, log=True),
         }
 
 
@@ -334,6 +337,10 @@ if __name__ == "__main__":
             eval_fun = get_RandomFeatureNetwork_eval_fun("SWIM")
         elif model_name == "RandomFeatureNetwork_iid":
             eval_fun = get_RandomFeatureNetwork_eval_fun("iid")
+        elif model_name == "RandomFeatureNetwork_relu":
+            eval_fun = get_RandomFeatureNetwork_eval_fun("SWIM", nn.ReLU())
+        elif model_name == "RandomFeatureNetwork_iid_relu":
+            eval_fun = get_RandomFeatureNetwork_eval_fun("iid", nn.ReLU())
         # random feature boosting models
         elif model_name == "GradientRFRBoost":
             eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "iid")
