@@ -21,6 +21,7 @@ from optuna_kfoldCV import evaluate_pytorch_model_kfoldcv
 def get_GradientRFRBoost_eval_fun(
         feature_type: Literal["iid", "SWIM"] = "SWIM",
         upscale_type: Literal["iid", "SWIM", "identity"] = "SWIM",
+        activation: nn.Module = nn.Tanh(),
         ):
     """Returns a function that evaluates the GradientRFRBoost model
     with the specified number of layers"""
@@ -49,13 +50,14 @@ def get_GradientRFRBoost_eval_fun(
                 trial.suggest_int("hidden_dim", 16, 512, step=32) if upscale_type != "identity"
                 else trial.suggest_categorical("hidden_dim", [X.size(1)])
             ),
-            "l2_reg": trial.suggest_float("l2_reg", 1e-3, 1, log=True),
-            "l2_ghat": trial.suggest_float("l2_ghat", 1e-7, 1, log=True),
+            "l2_reg": trial.suggest_float("l2_reg", 1e-3, 10, log=True),
+            "l2_ghat": trial.suggest_float("l2_ghat", 1e-7, 10, log=True),
             "boost_lr": trial.suggest_float("boost_lr", 0.5, 1.00001, step=0.1),
             "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
-               (trial.suggest_float("SWIM_scale", 0.25, 2.0) if feature_type == "SWIM" 
+               (trial.suggest_float("SWIM_scale", -1, 2.0) if feature_type == "SWIM" 
                 else trial.suggest_float("iid_scale", 0.1, 10, log=True))
             ),
+            'activation': activation,
         }
 
         return evaluate_pytorch_model_kfoldcv(
@@ -70,6 +72,7 @@ def get_GreedyRFRBoost_eval_fun(
         feature_type: Literal["iid", "SWIM"] = "SWIM",
         upscale_type: Literal["iid", "SWIM", "identity"] = "SWIM",
         sandwich_solver: Literal["dense", "diag", "scalar"] = "dense",
+        activation: nn.Module = nn.Tanh(),
         ):
     """Returns a function that evaluates the GreedyRFRBoost model
     with the specified number of layers"""
@@ -100,13 +103,14 @@ def get_GreedyRFRBoost_eval_fun(
                 trial.suggest_int("hidden_dim", 16, 512, step=32) if upscale_type != "identity"
                 else trial.suggest_categorical("hidden_dim", [X.size(1)])
             ),
-            "l2_reg": trial.suggest_float("l2_reg", 1e-3, 1, log=True),
-            "l2_ghat": trial.suggest_float("l2_ghat", 1e-7, 1, log=True),
+            "l2_reg": trial.suggest_float("l2_reg", 1e-4, 10, log=True),
+            "l2_ghat": trial.suggest_float("l2_ghat", 1e-7, 10, log=True),
             "boost_lr": trial.suggest_float("boost_lr", 0.5, 1.00001, step=0.1),
             "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
-               (trial.suggest_float("SWIM_scale", 0.25, 2.0) if feature_type == "SWIM" 
+               (trial.suggest_float("SWIM_scale", -1, 2.0) if feature_type == "SWIM" 
                 else trial.suggest_float("iid_scale", 0.1, 10, log=True))
             ),
+            "activation": activation,
         }
 
         return evaluate_pytorch_model_kfoldcv(
@@ -143,7 +147,7 @@ def get_RandomFeatureNetwork_eval_fun(
             # Hyperparameters
             "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, step=32),
             "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
-               (trial.suggest_float("SWIM_scale", 0.25, 2.0) if feature_type == "SWIM" 
+               (trial.suggest_float("SWIM_scale", -1, 2.0) if feature_type == "SWIM" 
                 else trial.suggest_float("iid_scale", 0.1, 10, log=True))
             ),
         }
@@ -332,33 +336,26 @@ if __name__ == "__main__":
             eval_fun = get_RandomFeatureNetwork_eval_fun("iid")
         # random feature boosting models
         elif model_name == "GradientRFRBoost":
-            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "SWIM")
+            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "iid")
         elif model_name == "GradientRFRBoostID":
             eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "identity")
         elif model_name == "GreedyRFRBoostDense":
-            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "SWIM", "dense")
-        elif model_name == "GreedyRFRBoostDiag":
-            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "SWIM", "diag")
-        elif model_name == "GreedyRFRBoostScalar":
-            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "SWIM", "scalar")
-        elif model_name == "GradientRFRBoost_upscaleiid":
-            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "iid")
-        elif model_name == "GreedyRFRBoostDense_upscaleiid":
             eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "dense")
-        elif model_name == "GreedyRFRBoostDiag_upscaleiid":
+        elif model_name == "GreedyRFRBoostDiag":
             eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "diag")
-        elif model_name == "GreedyRFRBoostScalar_upscaleiid":
+        elif model_name == "GreedyRFRBoostScalar":
             eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "scalar")
-        elif model_name == "GradientRFRBoostID_iidfeat":
-            eval_fun = get_GradientRFRBoost_eval_fun("iid", "identity")
-        elif model_name == "GradientRFRBoost_upscaleiid_iidfeat":
-            eval_fun = get_GradientRFRBoost_eval_fun("iid", "iid")
-        elif model_name == "GreedyRFRBoostDense_upscaleiid_iidfeat":
-            eval_fun = get_GreedyRFRBoost_eval_fun("iid", "iid", "dense")
-        elif model_name == "GreedyRFRBoostDiag_upscaleiid_iidfeat":
-            eval_fun = get_GreedyRFRBoost_eval_fun("iid", "iid", "diag")
-        elif model_name == "GreedyRFRBoostScalar_upscaleiid_iidfeat":
-            eval_fun = get_GreedyRFRBoost_eval_fun("iid", "iid", "scalar")
+
+        elif model_name == "GradientRFRBoost_relu":
+            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "iid", nn.ReLU())
+        elif model_name == "GradientRFRBoostID_relu":
+            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "identity", nn.ReLU())
+        elif model_name == "GreedyRFRBoostDense_relu":
+            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "dense", nn.ReLU())
+        elif model_name == "GreedyRFRBoostDiag_relu":
+            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "diag", nn.ReLU())
+        elif model_name == "GreedyRFRBoostScalar_relu":
+            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "scalar", nn.ReLU())
         else:
             raise ValueError(f"Unknown model name: {model_name}")
         #TODO implement random feature boosted xgboost
