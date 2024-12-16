@@ -35,6 +35,7 @@ def create_layer(
         layer_type: Literal["iid", "SWIM", "identity"],
         iid_scale: float = 1.0,
         SWIM_scale: float = 0.5,
+        activation: nn.Module = nn.Tanh(),
         ):
     """Takes in the input and output dimensions and returns 
     a layer of the specified type."""
@@ -42,10 +43,10 @@ def create_layer(
         layer = FittableSequential(
             nn.Linear(in_dim, out_dim), 
             ScaleLayer(iid_scale), 
-            nn.Tanh()
+            activation,
         )
     elif layer_type == "SWIM":
-        layer = SWIMLayer(in_dim, out_dim, activation=nn.Tanh(), c=SWIM_scale)
+        layer = SWIMLayer(in_dim, out_dim, activation=activation, c=SWIM_scale)
     elif layer_type == "identity":
         layer = Identity()
     else:
@@ -61,10 +62,11 @@ class Upscale(FittableModule):
                  upscale_type: Literal["iid", "SWIM", "identity"] = "iid",
                  iid_scale: float = 1.0,
                  SWIM_scale: float = 0.5,
+                 activation: nn.Module = nn.Tanh(),
                  ):
         self.upscale_type = upscale_type
         super(Upscale, self).__init__()
-        self.upscale = create_layer(in_dim, hidden_dim, upscale_type, iid_scale, SWIM_scale)
+        self.upscale = create_layer(in_dim, hidden_dim, upscale_type, iid_scale, SWIM_scale, activation)
     
     def fit(self, X: Tensor, y: Tensor):
         self.upscale.fit(X, y)
@@ -212,6 +214,7 @@ class RandFeatLayer(RandomFeatureLayer):
                  feature_type : Literal["iid", "SWIM"],
                  iid_scale: float = 1.0,
                  SWIM_scale: float = 0.5,
+                 activation: nn.Module = nn.Tanh(),
                  ):
         self.hidden_dim = hidden_dim
         self.randfeat_xt_dim = randfeat_xt_dim
@@ -219,9 +222,9 @@ class RandFeatLayer(RandomFeatureLayer):
         super(RandFeatLayer, self).__init__()
         
         if randfeat_xt_dim > 0:
-            self.Ft = create_layer(hidden_dim, randfeat_xt_dim, feature_type, iid_scale, SWIM_scale)
+            self.Ft = create_layer(hidden_dim, randfeat_xt_dim, feature_type, iid_scale, SWIM_scale, activation)
         if randfeat_x0_dim > 0:
-            self.F0 = create_layer(in_dim, randfeat_x0_dim, feature_type, iid_scale, SWIM_scale)
+            self.F0 = create_layer(in_dim, randfeat_x0_dim, feature_type, iid_scale, SWIM_scale, activation)
 
 
     def fit(self, Xt: Tensor, X0: Tensor, y: Tensor) -> Tensor:
@@ -371,6 +374,7 @@ class GreedyRFRBoostRegressor(BaseGRFRBoost):
                  use_batchnorm: bool = True,
                  iid_scale: float = 1.0,
                  SWIM_scale: float = 0.5,
+                 activation: nn.Module = nn.Tanh(),
                  ):
         """
         Tabular Greedy Random Feaute Boosting.
@@ -399,7 +403,8 @@ class GreedyRFRBoostRegressor(BaseGRFRBoost):
         if upscale_type == "identity":
             self.hidden_dim = in_dim
             hidden_dim = in_dim
-        upscale = Upscale(in_dim, hidden_dim, upscale_type, iid_scale, SWIM_scale)
+        upscale = Upscale(in_dim, hidden_dim, upscale_type, iid_scale, SWIM_scale,
+                          activation if feature_type=="SWIM" else nn.Tanh())
 
         # top level regressors
         top_level_regs = [RidgeModule(l2_reg) for _ in range(n_layers+1)]
@@ -410,7 +415,7 @@ class GreedyRFRBoostRegressor(BaseGRFRBoost):
             randfeat_x0_dim = 0
         random_feature_layers = [
             RandFeatLayer(in_dim, hidden_dim, randfeat_xt_dim, randfeat_x0_dim, feature_type,
-                          iid_scale, SWIM_scale)
+                          iid_scale, SWIM_scale, activation)
             for _ in range(n_layers)
         ]
 
@@ -443,6 +448,7 @@ class GradientRFRBoostRegressor(BaseGRFRBoost):
                  use_batchnorm: bool = True,
                  iid_scale: float = 1.0,
                  SWIM_scale: float = 0.5,
+                 activation: nn.Module = nn.Tanh(),
                  ):
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -459,7 +465,8 @@ class GradientRFRBoostRegressor(BaseGRFRBoost):
         if upscale_type == "identity":
             self.hidden_dim = in_dim
             hidden_dim = in_dim
-        upscale = Upscale(in_dim, hidden_dim, upscale_type, iid_scale, SWIM_scale)
+        upscale = Upscale(in_dim, hidden_dim, upscale_type, iid_scale, SWIM_scale,
+                          activation if feature_type=="SWIM" else nn.Tanh())
 
         # top level regressors
         top_level_regs = [RidgeModule(l2_reg) for _ in range(n_layers+1)]
@@ -467,7 +474,7 @@ class GradientRFRBoostRegressor(BaseGRFRBoost):
         # random feature layers
         random_feature_layers = [
             RandFeatLayer(in_dim, hidden_dim, randfeat_xt_dim, randfeat_x0_dim, feature_type,
-                          iid_scale, SWIM_scale)
+                          iid_scale, SWIM_scale, activation)
             for _ in range(n_layers)
         ]
 
@@ -596,6 +603,7 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
                  use_batchnorm: bool = True,
                  iid_scale: float = 1.0,
                  SWIM_scale: float = 0.5,
+                 activation: nn.Module = nn.Tanh(),
                  ):
         """TODO
 
@@ -631,7 +639,8 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
             self.hidden_dim = in_dim
             hidden_dim = in_dim
 
-        upscale = Upscale(in_dim, hidden_dim, upscale_type, iid_scale, SWIM_scale)
+        upscale = Upscale(in_dim, hidden_dim, upscale_type, iid_scale, SWIM_scale, 
+                          activation = activation if upscale_type=="SWIM" else nn.Tanh())
 
         # auxiliary classifiers
         top_level_classifiers = [LogisticRegression(n_classes, l2_cls, lbfgs_lr, lbfgs_max_iter) 
@@ -643,7 +652,7 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
         # random feature layers
         random_feature_layers = [
             RandFeatLayer(in_dim, hidden_dim, randfeat_xt_dim, randfeat_x0_dim, feature_type,
-                          iid_scale, SWIM_scale)
+                          iid_scale, SWIM_scale, activation)
             for _ in range(n_layers)
         ]
 

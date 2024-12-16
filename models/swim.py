@@ -90,7 +90,7 @@ class SWIMLayer(FittableModule):
             dists = dists[selected_idx]
 
             #define weights and biases
-            weights = 2*self.c * dx / (dists**2)
+            weights = abs(2*self.c) * dx / (dists**2)
             biases = -torch.sum(weights * X[idx1], axis=1) - self.c # TODO check sign
             #biases = -torch.einsum('ij,ij->i', weights, X[idx1]) - self.c
             self.dense.weight.data = weights
