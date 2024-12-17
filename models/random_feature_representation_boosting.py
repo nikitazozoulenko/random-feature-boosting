@@ -374,7 +374,7 @@ class GreedyRFRBoostRegressor(BaseGRFRBoost):
                  use_batchnorm: bool = True,
                  iid_scale: float = 1.0,
                  SWIM_scale: float = 0.5,
-                 activation: nn.Module = nn.Tanh(),
+                 activation: Literal["tanh", "relu"] = "tanh",
                  ):
         """
         Tabular Greedy Random Feaute Boosting.
@@ -398,6 +398,14 @@ class GreedyRFRBoostRegressor(BaseGRFRBoost):
         self.boost_lr = boost_lr
         self.feature_type = feature_type
         self.upscale_type = upscale_type
+
+        #activation (needs to be string due to my json code)
+        if activation.lower() == "tanh":
+            activation = nn.Tanh()
+        elif activation.lower() == "relu":
+            activation = nn.ReLU()
+        else:
+            raise ValueError(f"Unknown activation {activation}")
 
         # if no upscale, set hidden_dim to in_dim
         if upscale_type == "identity":
@@ -448,7 +456,7 @@ class GradientRFRBoostRegressor(BaseGRFRBoost):
                  use_batchnorm: bool = True,
                  iid_scale: float = 1.0,
                  SWIM_scale: float = 0.5,
-                 activation: nn.Module = nn.Tanh(),
+                 activation: Literal["tanh", "relu"] = "tanh",
                  ):
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -460,6 +468,14 @@ class GradientRFRBoostRegressor(BaseGRFRBoost):
         self.l2_ghat = l2_ghat
         self.feature_type = feature_type
         self.upscale_type = upscale_type
+
+        #activation (needs to be string due to my json code)
+        if activation.lower() == "tanh":
+            activation = nn.Tanh()
+        elif activation.lower() == "relu":
+            activation = nn.ReLU()
+        else:
+            raise ValueError(f"Unknown activation {activation}")
 
         # if no upscale, set hidden_dim to in_dim
         if upscale_type == "identity":
@@ -557,16 +573,9 @@ class GhatGradientLayerCrossEntropy(GhatBoostingLayer):
             probs = nn.functional.sigmoid(auxiliary_cls(Xt))
         else:
             probs = nn.functional.softmax(auxiliary_cls(Xt), dim=1)
-
         G = (y - probs) @ auxiliary_cls.linear.weight
         N = y.size(0)
-        # print("G norm", torch.norm(G))
-        # print("average G norm", torch.norm(G) / N)
-        # print("G pre norm", G)
-        #G = G / (torch.norm(G) / N**0.5).clamp(min=0.001)
-        G = G / (torch.norm(G) / N).clamp(min=0.001)
-        # print("G after norm", G)
-        # print()
+        G = G / (torch.norm(G) / N**0.5).clamp(min=0.001)
 
         # fit to negative gradient (finding functional direction)
         Ghat = self.ridge.fit_transform(F, G)
@@ -603,7 +612,7 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
                  use_batchnorm: bool = True,
                  iid_scale: float = 1.0,
                  SWIM_scale: float = 0.5,
-                 activation: nn.Module = nn.Tanh(),
+                 activation: Literal["tanh", "relu"] = "tanh",
                  ):
         """TODO
 
@@ -634,20 +643,24 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
         self.feature_type = feature_type
         self.upscale_type = upscale_type
 
+        #activation (needs to be string due to my json code)
+        if activation.lower() == "tanh":
+            activation = nn.Tanh()
+        elif activation.lower() == "relu":
+            activation = nn.ReLU()
+        else:
+            raise ValueError(f"Unknown activation {activation}")
+
         # if no upscale, set hidden_dim to in_dim
         if upscale_type == "identity":
             self.hidden_dim = in_dim
             hidden_dim = in_dim
-
         upscale = Upscale(in_dim, hidden_dim, upscale_type, iid_scale, SWIM_scale, 
                           activation = activation if upscale_type=="SWIM" else nn.Tanh())
 
         # auxiliary classifiers
         top_level_classifiers = [LogisticRegression(n_classes, l2_cls, lbfgs_lr, lbfgs_max_iter) 
                                  for _ in range(n_layers+1)] 
-        # TODO this is the one that needs a pointer to the previous class...
-        # TODO i should make this work for both reg and cls, so i can implement a speedy iterative one too for reg.
-        # leave for now. Either .fit takes in the previous model, or i pass a pointer in the constructor.
 
         # random feature layers
         random_feature_layers = [

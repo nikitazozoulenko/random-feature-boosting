@@ -44,22 +44,23 @@ def get_GradientRFRBoost_eval_fun(
             "upscale_type": trial.suggest_categorical("upscale_type", [upscale_type]),
             "randfeat_xt_dim": trial.suggest_categorical("randfeat_xt_dim", [512]),
             "randfeat_x0_dim": trial.suggest_categorical("randfeat_x0_dim", [512]),
+            "activation": trial.suggest_categorical("activation", [activation]),
             # Hyperparameters
             "n_layers": trial.suggest_int("n_layers", 1, 15, log=True),
-            "hidden_dim": (
-                #trial.suggest_int("hidden_dim", 16, 512, step=32) if upscale_type != "identity"
-                trial.suggest_categorical("hidden_dim", [512]) if upscale_type != "identity"
-                else trial.suggest_categorical("hidden_dim", [X.size(1)])
-            ),
+            "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
             "l2_reg": trial.suggest_float("l2_reg", 1e-4, 10, log=True),
             "l2_ghat": trial.suggest_float("l2_ghat", 1e-7, 10, log=True),
             "boost_lr": trial.suggest_float("boost_lr", 0.5, 1.00001, step=0.1),
-            "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
-               #(trial.suggest_float("SWIM_scale", -1, 2.0) if feature_type == "SWIM"
-                (trial.suggest_categorical("SWIM_scale", [-0.75]) if feature_type == "SWIM"
-                else trial.suggest_float("iid_scale", 0.1, 10, log=True))
-            ),
-            'activation': activation,
+            "SWIM_scale": trial.suggest_float("SWIM_scale", -1, 2.0) ,
+            "iid_scale": trial.suggest_float("iid_scale", 0.1, 10, log=True),
+            # "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
+            #     (trial.suggest_float("SWIM_scale", -1, 2.0) if feature_type == "SWIM"
+            #     else trial.suggest_float("iid_scale", 0.1, 10, log=True))
+            # ),
+            # "hidden_dim": (
+            #     trial.suggest_int("hidden_dim", 16, 512, log=True) if upscale_type != "identity"
+            #     else trial.suggest_categorical("hidden_dim", [X.size(1)])
+            # ),
         }
 
         return evaluate_pytorch_model_kfoldcv(
@@ -99,21 +100,18 @@ def get_GreedyRFRBoost_eval_fun(
             "randfeat_xt_dim": trial.suggest_categorical("randfeat_xt_dim", [512]),
             "randfeat_x0_dim": trial.suggest_categorical("randfeat_x0_dim", [512]),
             "sandwich_solver": trial.suggest_categorical("sandwich_solver", [sandwich_solver]),
+            "activation": trial.suggest_categorical("activation", [activation]),
             # Hyperparameters
             "n_layers": trial.suggest_int("n_layers", 1, 15, log=True),
-            "hidden_dim": (
-                trial.suggest_categorical("hidden_dim", [512]) if upscale_type != "identity"
-                else trial.suggest_categorical("hidden_dim", [X.size(1)])
-            ),
+            "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
             "l2_reg": trial.suggest_float("l2_reg", 1e-4, 10, log=True),
-            "l2_ghat": trial.suggest_float("l2_ghat", 1e-7, 10, log=True),
+            "l2_ghat": (
+                trial.suggest_float("l2_ghat", 1e-7, 10, log=True)
+                if sandwich_solver == "diag"
+                else trial.suggest_float("l2_ghat", 1e-9, 1e-4, log=True)),
             "boost_lr": trial.suggest_float("boost_lr", 0.5, 1.00001, step=0.1),
-            "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
-               #(trial.suggest_float("SWIM_scale", -1, 2.0) if feature_type == "SWIM"
-                (trial.suggest_categorical("SWIM_scale", [-0.75]) if feature_type == "SWIM"
-                else trial.suggest_float("iid_scale", 0.1, 10, log=True))
-            ),
-            "activation": activation,
+            "SWIM_scale": trial.suggest_float("SWIM_scale", -1, 2.0) ,
+            "iid_scale": trial.suggest_float("iid_scale", 0.1, 10, log=True),
         }
 
         return evaluate_pytorch_model_kfoldcv(
@@ -148,14 +146,13 @@ def get_RandomFeatureNetwork_eval_fun(
             "in_dim": trial.suggest_categorical("in_dim", [X.size(1)]),
             "out_dim": trial.suggest_categorical("out_dim", [y.size(1)]),
             "upscale_type": trial.suggest_categorical("upscale_type", [feature_type]),
-            "hidden_dim": trial.suggest_categorical("hidden_dim", [512]),
+            "activation": trial.suggest_categorical("activation", [activation]),
             # Hyperparameters
+            "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
             "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
-               #(trial.suggest_float("SWIM_scale", -1, 2.0) if feature_type == "SWIM" 
-               (trial.suggest_categorical("SWIM_scale", [-0.75]) if feature_type == "SWIM"
+               (trial.suggest_float("SWIM_scale", -1, 2.0) if feature_type == "SWIM" 
                 else trial.suggest_float("iid_scale", 0.1, 10, log=True))
             ),
-            "activation": activation,
             "l2_reg": trial.suggest_float("l2_reg", 1e-4, 10, log=True),
         }
 
@@ -180,7 +177,7 @@ def evaluate_Ridge(
         ):
     ModelClass = RidgeModule
     get_optuna_params = lambda trial : {
-        "l2_reg": trial.suggest_float("l2_reg", 1e-6, 1.0, log=True),
+        "l2_reg": trial.suggest_float("l2_reg", 1e-4, 10.0, log=True),
     }
 
     return evaluate_pytorch_model_kfoldcv(
@@ -241,7 +238,7 @@ def evaluate_End2End(
         "bottleneck_dim": trial.suggest_categorical("bottleneck_dim", [512]),
         # Hyperparameters
         "n_blocks": trial.suggest_int("n_blocks", 1, 15),
-        "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, step=32),
+        "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
         "lr": trial.suggest_float("lr", 1e-7, 1e-2, log=True),
         "end_lr_factor": trial.suggest_float("end_lr_factor", 0.01, 1.0, log=True),
         "n_epochs": trial.suggest_int("n_epochs", 10, 50, log=True),
@@ -330,43 +327,43 @@ if __name__ == "__main__":
         # baseline models
         if model_name == "End2End":
             eval_fun = evaluate_End2End
+        if model_name == "End2End_cpu":
+            eval_fun = evaluate_End2End
         elif model_name == "Ridge":
             eval_fun = evaluate_Ridge
-        # elif model_name == "RidgeCV":
-        #     eval_fun = evaluate_RidgeCV
         elif model_name == "XGBoostRegressor":
             eval_fun = evaluate_XGBoostRegressor
         # RFNN
         elif model_name == "RandomFeatureNetwork":
-            eval_fun = get_RandomFeatureNetwork_eval_fun("SWIM")
+            eval_fun = get_RandomFeatureNetwork_eval_fun("SWIM", "tanh")
         elif model_name == "RandomFeatureNetwork_iid":
-            eval_fun = get_RandomFeatureNetwork_eval_fun("iid")
+            eval_fun = get_RandomFeatureNetwork_eval_fun("iid", "tanh")
         elif model_name == "RandomFeatureNetwork_relu":
-            eval_fun = get_RandomFeatureNetwork_eval_fun("SWIM", nn.ReLU())
+            eval_fun = get_RandomFeatureNetwork_eval_fun("SWIM", "relu")
         elif model_name == "RandomFeatureNetwork_iid_relu":
-            eval_fun = get_RandomFeatureNetwork_eval_fun("iid", nn.ReLU())
-        # random feature boosting models
+            eval_fun = get_RandomFeatureNetwork_eval_fun("iid", "relu")
+        # GRFRBoost
         elif model_name == "GradientRFRBoost":
-            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "iid")
+            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "iid", "tanh")
         elif model_name == "GradientRFRBoostID":
-            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "identity")
+            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "identity", "tanh")
         elif model_name == "GreedyRFRBoostDense":
-            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "dense")
+            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "dense", "tanh")
         elif model_name == "GreedyRFRBoostDiag":
-            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "diag")
+            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "diag", "tanh")
         elif model_name == "GreedyRFRBoostScalar":
-            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "scalar")
-
+            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "scalar", "tanh")
+        # relu GRFRBoost
         elif model_name == "GradientRFRBoost_relu":
-            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "iid", nn.ReLU())
+            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "iid", "relu")
         elif model_name == "GradientRFRBoostID_relu":
-            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "identity", nn.ReLU())
+            eval_fun = get_GradientRFRBoost_eval_fun("SWIM", "identity", "relu")
         elif model_name == "GreedyRFRBoostDense_relu":
-            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "dense", nn.ReLU())
+            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "dense", "relu")
         elif model_name == "GreedyRFRBoostDiag_relu":
-            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "diag", nn.ReLU())
+            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "diag", "relu")
         elif model_name == "GreedyRFRBoostScalar_relu":
-            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "scalar", nn.ReLU())
+            eval_fun = get_GreedyRFRBoost_eval_fun("SWIM", "iid", "scalar", "relu")
         else:
             raise ValueError(f"Unknown model name: {model_name}")
         #TODO implement random feature boosted xgboost
