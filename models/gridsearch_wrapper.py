@@ -71,7 +71,7 @@ if __name__ == "__main__":
     param_grid = {
             'modelClass': [GradientRFRBoostClassifier],
             'l2_cls': np.logspace(-4, 0, 5),
-            'l2_ghat': np.logspace(-4, 0, 5),
+            'l2_ghat': np.logspace(-7, -3, 5),
             'in_dim': [2],
             'n_classes': [3],
             'hidden_dim': [2],

@@ -569,13 +569,13 @@ class GhatGradientLayerCrossEntropy(GhatBoostingLayer):
             auxiliary_reg (RidgeModule): Auxiliary top level regressor.
         """
         # compute negative gradient, L_2(mu_N) normalized
+        N = y.size(0)
         if self.n_classes==2:
             probs = nn.functional.sigmoid(auxiliary_cls(Xt))
         else:
             probs = nn.functional.softmax(auxiliary_cls(Xt), dim=1)
         G = (y - probs) @ auxiliary_cls.linear.weight
-        N = y.size(0)
-        G = G / (torch.norm(G) / N**0.5).clamp(min=0.001)
+        G = G / torch.norm(G) * N**0.5
 
         # fit to negative gradient (finding functional direction)
         Ghat = self.ridge.fit_transform(F, G)

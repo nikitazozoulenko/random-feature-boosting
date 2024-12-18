@@ -51,12 +51,12 @@ def get_GradientRFRBoost_eval_fun(
             "l2_reg": trial.suggest_float("l2_reg", 1e-4, 10, log=True),
             "l2_ghat": trial.suggest_float("l2_ghat", 1e-7, 10, log=True),
             "boost_lr": trial.suggest_float("boost_lr", 0.5, 1.00001, step=0.1),
-            "SWIM_scale": trial.suggest_float("SWIM_scale", -1, 2.0) ,
-            "iid_scale": trial.suggest_float("iid_scale", 0.1, 10, log=True),
-            # "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
-            #     (trial.suggest_float("SWIM_scale", -1, 2.0) if feature_type == "SWIM"
-            #     else trial.suggest_float("iid_scale", 0.1, 10, log=True))
-            # ),
+            "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
+                (trial.suggest_float("SWIM_scale", 0.25, 2.0) if feature_type == "SWIM"
+                else trial.suggest_float("iid_scale", 0.1, 10, log=True))
+            ),
+            #"SWIM_scale": trial.suggest_float("SWIM_scale", 0.5, 2.0) ,
+            #"iid_scale": trial.suggest_float("iid_scale", 0.1, 10, log=True),
             # "hidden_dim": (
             #     trial.suggest_int("hidden_dim", 16, 512, log=True) if upscale_type != "identity"
             #     else trial.suggest_categorical("hidden_dim", [X.size(1)])
@@ -110,8 +110,16 @@ def get_GreedyRFRBoost_eval_fun(
                 if sandwich_solver == "diag"
                 else trial.suggest_float("l2_ghat", 1e-9, 1e-4, log=True)),
             "boost_lr": trial.suggest_float("boost_lr", 0.5, 1.00001, step=0.1),
-            "SWIM_scale": trial.suggest_float("SWIM_scale", -1, 2.0) ,
-            "iid_scale": trial.suggest_float("iid_scale", 0.1, 10, log=True),
+            "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
+                (trial.suggest_float("SWIM_scale", 0.25, 2.0) if feature_type == "SWIM"
+                else trial.suggest_float("iid_scale", 0.1, 10, log=True))
+            ),
+            #"SWIM_scale": trial.suggest_float("SWIM_scale", 0.5, 2.0) ,
+            #"iid_scale": trial.suggest_float("iid_scale", 0.1, 10, log=True),
+            # "hidden_dim": (
+            #     trial.suggest_int("hidden_dim", 16, 512, log=True) if upscale_type != "identity"
+            #     else trial.suggest_categorical("hidden_dim", [X.size(1)])
+            # ),
         }
 
         return evaluate_pytorch_model_kfoldcv(
@@ -150,7 +158,7 @@ def get_RandomFeatureNetwork_eval_fun(
             # Hyperparameters
             "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
             "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
-               (trial.suggest_float("SWIM_scale", -1, 2.0) if feature_type == "SWIM" 
+               (trial.suggest_float("SWIM_scale", 0.25, 2.0) if feature_type == "SWIM" 
                 else trial.suggest_float("iid_scale", 0.1, 10, log=True))
             ),
             "l2_reg": trial.suggest_float("l2_reg", 1e-4, 10, log=True),
