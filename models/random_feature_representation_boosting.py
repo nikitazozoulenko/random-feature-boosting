@@ -536,8 +536,12 @@ def line_search_cross_entropy(n_classes, cls, X, y, G_hat):
         alpha = torch.tensor([0.0], requires_grad=True, device=X.device, dtype=X.dtype)
 
         def closure(a):
-            logits = cls(X + a * G_hat)
-            loss = loss_fn(logits, y_labels)
+            new_X = X + a * G_hat
+            logits = cls(new_X)
+            #print("X + a * G_hat", X + a * G_hat)
+            #print("X", X)
+            loss = loss_fn(logits, y_labels) + 0.00001 * a**2
+            #print("a", a, "loss", loss, "logits", logits)
             return loss
 
         result = torchmin.minimize(closure, alpha, method='newton-exact')
@@ -570,22 +574,29 @@ class GhatGradientLayerCrossEntropy(GhatBoostingLayer):
         """
         # compute negative gradient, L_2(mu_N) normalized
         N = y.size(0)
+        #print("logits", auxiliary_cls(Xt))
         if self.n_classes==2:
             probs = nn.functional.sigmoid(auxiliary_cls(Xt))
         else:
             probs = nn.functional.softmax(auxiliary_cls(Xt), dim=1)
+        #print("probs", probs)
         G = (y - probs) @ auxiliary_cls.linear.weight
+        #print("pre G", G)
+        #print("pre G norm", torch.norm(G))
         G = G / torch.norm(G) * N**0.5
+        #print("post G", G)
 
         # fit to negative gradient (finding functional direction)
         Ghat = self.ridge.fit_transform(F, G)
+        #print("Ghat", Ghat)
 
         # line search closed form risk minimization of R(W_t, Phi_{t+1})
-        self.linesearch = line_search_cross_entropy(
-            self.n_classes, auxiliary_cls, Xt, y, Ghat
-            )
-
-        #print("linesearch", self.linesearch)
+        # self.linesearch = line_search_cross_entropy(
+        #     self.n_classes, auxiliary_cls, Xt, y, Ghat
+        #     )
+        # print("linesearch", self.linesearch)
+        self.linesearch = 1.0
+        print("linesearch", self.linesearch)
         return Ghat * self.linesearch
     
 

@@ -8,7 +8,7 @@ import torch.nn as nn
 
 
 class SKLearnWrapper(BaseEstimator):
-    def __init__(self, modelClass=None, **model_params):
+    def __init__(self, modelClass=None, **model_params,):
         self.modelClass = modelClass
         self.model_params = model_params
         self.seed = None
@@ -83,8 +83,8 @@ if __name__ == "__main__":
             'use_batchnorm': [True],
             'lbfgs_max_iter': [300],
             'lbfgs_lr': [1.0],
-            'SWIM_scale': [-0.5],
-            'activation': [nn.ReLU()],
+            'SWIM_scale': [1.0],
+            'activation': ["swim"],
         }
     seed = 42
 
