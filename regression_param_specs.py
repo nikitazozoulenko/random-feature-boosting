@@ -335,7 +335,7 @@ if __name__ == "__main__":
         # baseline models
         if model_name == "End2End":
             eval_fun = evaluate_End2End
-        if model_name == "End2End_cpu":
+        elif model_name == "End2End_cpu":
             eval_fun = evaluate_End2End
         elif model_name == "Ridge":
             eval_fun = evaluate_Ridge
