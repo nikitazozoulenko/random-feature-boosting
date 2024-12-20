@@ -163,8 +163,8 @@ class BaseGRFRBoost(FittableModule):
                 X = self.batchnorms[t](X)
                 # Step 3: Learn top level classifier W_t
                 #TODO TESTING REDO THIS
-                #self.top_level_modules[t+1].fit(X, y, init_top=self.top_level_modules[t])
-                self.top_level_modules[t+1] = self.top_level_modules[t]
+                self.top_level_modules[t+1].fit(X, y, init_top=self.top_level_modules[t])
+                #self.top_level_modules[t+1] = self.top_level_modules[t]
 
         return self
 
@@ -581,24 +581,23 @@ class GhatGradientLayerCrossEntropy(GhatBoostingLayer):
             probs = nn.functional.sigmoid(auxiliary_cls(Xt))
         else:
             probs = nn.functional.softmax(auxiliary_cls(Xt), dim=1)
-        print("probs", probs)
+        #print("probs", probs)
         G = (y - probs) @ auxiliary_cls.linear.weight
-        print("pre G", G)
-        print("pre G norm", torch.norm(G))
+        #print("pre G", G)
+        #print("pre G norm", torch.norm(G))
         G = G / torch.norm(G) * N**0.5
-        print("post G", G)
+        #print("post G", G)
 
         # fit to negative gradient (finding functional direction)
         Ghat = self.ridge.fit_transform(F, G)
-        print("Ghat", Ghat)
+        #print("Ghat", Ghat)
 
         #line search closed form risk minimization of R(W_t, Phi_{t+1})
         self.linesearch = line_search_cross_entropy(
             self.n_classes, auxiliary_cls, Xt, y, Ghat
             )
-        print("linesearch", self.linesearch)
-        # self.linesearch = 1.0
-        # print("linesearch", self.linesearch)
+        #print("linesearch", self.linesearch)
+        self.linesearch = 1.0
         return Ghat * self.linesearch
     
 
