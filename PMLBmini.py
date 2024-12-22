@@ -4,7 +4,7 @@ from pathlib import Path
 import os
 import pickle
 import time
-import functools
+import itertools
 
 from tqdm import tqdm
 import numpy as np
@@ -191,12 +191,12 @@ def GRFRBoost_param_grid(
         use_batchnorm: bool = False,
         do_linesearch: bool = False, # find out if good or not
         freeze_top: bool = False,
-        hidden_dim: int = 128,
+        hidden_dim: int = 512,
         ):
     param_grid = {
         'modelClass': [GradientRFRBoostClassifier],
-        'l2_cls': [100, 10, 1, 0.1, 0.01, 0.001, 0.0001],
-        'l2_ghat': [100, 10, 1, 0.1, 0.01, 0.001, 0.0001],
+        'l2_cls': [10, 1, 0.1, 0.01, 0.001, 0.0001],
+        'l2_ghat': [1, 0.1, 0.01, 0.001, 0.0001],
         'boost_lr': [1.0, 0.1, 0.01, 0.001],
         'n_layers': [1],
         'randfeat_xt_dim': [hidden_dim],
@@ -267,7 +267,7 @@ if __name__ == "__main__":
         #GRFRBoost
         else:
             matched = False
-            for feat, up, linesearch, freeze in functools.product(["SWIM", "iid"], ["identity", "SWIM", "iid"], [True, False], [True, False]):
+            for feat, up, linesearch, freeze in itertools.product(["SWIM", "iid"], ["identity", "SWIM", "iid"], [True, False], [True, False]):
                 expected_name = f"GRFRBoost_feat{feat}_up{up}_linesearch{linesearch}_freeze{freeze}"
                 if model_name == expected_name:
                     param_grid = GRFRBoost_param_grid(upscale_type=up, 
