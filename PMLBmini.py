@@ -170,6 +170,7 @@ def End2End_param_grid():
 
 def RFNN_param_grid(
         upscale_type: Literal["identity", "SWIM", "iid"],
+        activation: Literal["tanh", "relu"] = "tanh",
         ):
     param_grid = {
         'modelClass': [GradientRFRBoostClassifier],
@@ -179,6 +180,7 @@ def RFNN_param_grid(
         'hidden_dim': ([512]
                        if upscale_type != "identity" else
                        [512]),
+        'activation': [activation],
         }
     return param_grid
 
@@ -223,7 +225,7 @@ def parse_args():
         "--models", 
         nargs='+', 
         type=str, 
-        default=["LogisticRegression",], 
+        default=["LogisticRegression"], 
         help="List of model names to run."
     )
     parser.add_argument(
@@ -253,31 +255,29 @@ if __name__ == "__main__":
 
     # Run experiments
     for model_name in args.models:
+        activation = "relu" if "relu" in model_name else "tanh"
         #end2end
         if model_name == "E2E_MLP_ResNet":
             param_grid = End2End_param_grid()
         #RFNN
-        elif model_name == "RFNN":
-            param_grid = RFNN_param_grid("SWIM")
-        elif model_name == "RFNN_iid":
-            param_grid = RFNN_param_grid("iid")
+        elif "RFNN_iid" in model_name:
+            param_grid = RFNN_param_grid("iid", activation)
+        elif "RFNN" in model_name:
+            param_grid = RFNN_param_grid("SWIM", activation)
         #logistic
         elif model_name == "Logistic(ours)":
             param_grid = RFNN_param_grid("identity")
         #GRFRBoost
         else:
-            matched = False
             for feat, up, linesearch, freeze in itertools.product(["SWIM", "iid"], ["identity", "SWIM", "iid"], [True, False], [True, False]):
                 expected_name = f"GRFRBoost_feat{feat}_up{up}_linesearch{linesearch}_freeze{freeze}"
-                if model_name == expected_name:
+                if expected_name in model_name:
                     param_grid = GRFRBoost_param_grid(upscale_type=up, 
                                                       feature_type=feat, 
                                                       do_linesearch=linesearch,
-                                                      freeze_top=freeze)
-                    matched = True
+                                                      freeze_top=freeze,
+                                                      activation=activation)
                     break
-            if not matched:
-                continue
 
         #run model
         estimator = WrapperGridSearch(param_grid, seed = args.seed)
