@@ -154,13 +154,13 @@ def End2End_param_grid():
     param_grid = {
         'modelClass': [End2EndMLPResNet],
         'lr': np.logspace(-5, -1, 5),
-        'hidden_dim': [32],
-        'bottleneck_dim': [32],
-        'n_blocks': [1, 2],
+        'hidden_dim': [512],
+        'bottleneck_dim': [512],
+        'n_blocks': [1, 2, 3],
         'loss': ["bce"],
-        'n_epochs': [30],
+        'n_epochs': [20, 30, 40, 50],
         'end_lr_factor': [0.01],
-        'weight_decay': [0.00001],
+        'weight_decay': [0.0001],
         'batch_size': [32],
         'activation': [nn.ReLU()],
         }
@@ -175,10 +175,10 @@ def RFNN_param_grid(
         'modelClass': [GradientRFRBoostClassifier],
         'n_layers': [0],
         'upscale_type': [upscale_type],
-        'l2_cls': [100, 10, 1, 0.1, 0.01, 0.001, 0.0001],
-        'hidden_dim': ([32, 64, 128, 256, 512]
+        'l2_cls': [10, 1, 0.1, 0.01, 0.001, 0.0001],
+        'hidden_dim': ([512]
                        if upscale_type != "identity" else
-                       [32]),
+                       [512]),
         }
     return param_grid
 
@@ -196,9 +196,9 @@ def GRFRBoost_param_grid(
     param_grid = {
         'modelClass': [GradientRFRBoostClassifier],
         'l2_cls': [10, 1, 0.1, 0.01, 0.001, 0.0001],
-        'l2_ghat': [1, 0.1, 0.01, 0.001, 0.0001],
-        'boost_lr': [1.0, 0.1, 0.01, 0.001],
-        'n_layers': [1],
+        'l2_ghat': [10, 1, 0.1, 0.01, 0.001, 0.0001],
+        'boost_lr': [10, 1.0, 0.1, 0.01],
+        'n_layers': [1, 2, 3],
         'randfeat_xt_dim': [hidden_dim],
         'randfeat_x0_dim': [hidden_dim],
         'hidden_dim': [hidden_dim],
