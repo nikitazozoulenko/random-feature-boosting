@@ -111,6 +111,7 @@ class BaseGRFRBoost(FittableModule):
             ghat_boosting_layers: List[GhatBoostingLayer],
             boost_lr: float = 1.0,
             use_batchnorm: bool = True,
+            freeze_top_at_t: Optional[int] = None,
             ):
         """
         Base class for Greedy Random Feature Boosting.
@@ -119,6 +120,7 @@ class BaseGRFRBoost(FittableModule):
         """
         super(BaseGRFRBoost, self).__init__()
         self.boost_lr = boost_lr
+        self.freeze_top_at_t = freeze_top_at_t
 
         self.upscale = upscale # simple upscale layer, same for everyone
         self.top_level_modules = nn.ModuleList(top_level_modules) # either ridge, or multiclass logistic, or binary logistic
@@ -162,9 +164,11 @@ class BaseGRFRBoost(FittableModule):
                 X = X + self.boost_lr * Ghat
                 X = self.batchnorms[t](X)
                 # Step 3: Learn top level classifier W_t
-                #TODO TESTING REDO THIS
-                self.top_level_modules[t+1].fit(X, y, init_top=self.top_level_modules[t])
-                #self.top_level_modules[t+1] = self.top_level_modules[t]
+                if self.freeze_top_at_t is None or t < self.freeze_top_at_t:
+                    self.top_level_modules[t+1].fit(X, y)
+                else:
+                    self.top_level_modules[t+1] = self.top_level_modules[t]
+
 
         return self
 
@@ -556,10 +560,12 @@ class GhatGradientLayerCrossEntropy(GhatBoostingLayer):
                  n_classes: int,
                  hidden_dim: int,
                  l2_ghat: float,
+                 do_linesearch: bool,
                  ):
         self.n_classes = n_classes
         self.hidden_dim = hidden_dim
         self.l2_ghat = l2_ghat
+        self.do_linesearch = do_linesearch
         super(GhatGradientLayerCrossEntropy, self).__init__()
         self.ridge = RidgeModule(l2_ghat)
 
@@ -593,11 +599,9 @@ class GhatGradientLayerCrossEntropy(GhatBoostingLayer):
         #print("Ghat", Ghat)
 
         #line search closed form risk minimization of R(W_t, Phi_{t+1})
-        self.linesearch = line_search_cross_entropy(
+        self.linesearch = 1.0 if not self.do_linesearch else line_search_cross_entropy(
             self.n_classes, auxiliary_cls, Xt, y, Ghat
             )
-        #print("linesearch", self.linesearch)
-        self.linesearch = 1.0
         return Ghat * self.linesearch
     
 
@@ -625,6 +629,8 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
                  iid_scale: float = 1.0,
                  SWIM_scale: float = 0.5,
                  activation: Literal["tanh", "relu"] = "tanh",
+                 do_linesearch: bool = True,
+                 freeze_top_at_t: Optional[int] = None
                  ):
         """TODO
 
@@ -683,11 +689,11 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
 
         # ghat boosting layers
         ghat_boosting_layers = [
-            GhatGradientLayerCrossEntropy(n_classes, hidden_dim, l2_ghat)
+            GhatGradientLayerCrossEntropy(n_classes, hidden_dim, l2_ghat, do_linesearch)
             for t in range(n_layers)
         ]
 
         super(GradientRFRBoostClassifier, self).__init__(
-            upscale, top_level_classifiers, random_feature_layers, ghat_boosting_layers, boost_lr, use_batchnorm
+            upscale, top_level_classifiers, random_feature_layers, ghat_boosting_layers, boost_lr, use_batchnorm, freeze_top_at_t
         )
 
