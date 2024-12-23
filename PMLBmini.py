@@ -39,11 +39,13 @@ class WrapperGridSearch(BaseEstimator, ClassifierMixin):
                  verbose=3, 
                  scaler = MinMaxScaler(), # alternative is StandardScaler()
                  seed = 42,
+                 scoring:Literal["roc_auc", "accuracy", "neg_log_loss"]="roc_auc"
                  ):
         self.param_grid = param_grid
         self.verbose = verbose
         self.scaler = scaler
         self.seed = seed
+        self.scoring = scoring
 
 
     def fit(self, X, y):
@@ -71,7 +73,7 @@ class WrapperGridSearch(BaseEstimator, ClassifierMixin):
             param_grid= param_grid,
             cv=StratifiedKFold(n_splits=5),
             verbose=self.verbose,
-            scoring="neg_log_loss",   #scoring=accuracy   #scoring="neg_log_loss"  #scoring="roc_auc"
+            scoring=self.scoring,   #scoring=accuracy   #scoring="neg_log_loss"  #scoring="roc_auc"
         )
         grid_search.fit(X, y)
 
@@ -86,14 +88,13 @@ class WrapperGridSearch(BaseEstimator, ClassifierMixin):
     def predict_proba(self, X):
         X = self.scaler.transform(X.values)
         X = torch.tensor(X).float()
-        proba_0 = self.model.predict_proba(X)
-        return np.concatenate((1 - proba_0, proba_0), axis=1)
+        return self.model.predict_proba(X)
 
 
     def decision_function(self, X):
-        proba = self.predict_proba(X)
-        decision = np.log((proba[:, 1] + 1e-10) / (proba[:, 0] + 1e-10))
-        return decision
+        X = self.scaler.transform(X.values)
+        X = torch.tensor(X).float()
+        return self.model.decision_function(X)
     
 
 ##################################################
@@ -256,30 +257,47 @@ if __name__ == "__main__":
 
     # Run experiments
     for model_name in args.models:
+        #relu or tanh
         activation = "relu" if "relu" in model_name else "tanh"
+        #gridsearchcv scorer
+        if "crossentropy" in model_name:
+            scoring = "neg_log_loss"
+        elif "acc" in model_name:
+            scoring = "accuracy"
+        else:
+            scoring = "roc_auc"
+        
         #end2end
-        if model_name == "E2E_MLP_ResNet":
+        if "E2E_MLP_ResNet" in model_name:
             param_grid = End2End_param_grid()
+
         #RFNN
         elif "RFNN_iid" in model_name:
             param_grid = RFNN_param_grid("iid", activation)
         elif "RFNN" in model_name:
             param_grid = RFNN_param_grid("SWIM", activation)
+
         #logistic
-        elif model_name == "Logistic(ours)":
+        elif "Logistic(ours)" in model_name:
             param_grid = RFNN_param_grid("identity")
+
         #GRFRBoost
-        else:
-            for feat, up, linesearch, freeze in itertools.product(["SWIM", "iid"], ["identity", "SWIM", "iid"], [True, False], [True, False]):
-                expected_name = f"GRFRBoost_feat{feat}_up{up}_linesearch{linesearch}_freeze{freeze}"
-                if expected_name in model_name:
-                    param_grid = GRFRBoost_param_grid(upscale_type=up, 
-                                                      feature_type=feat, 
-                                                      do_linesearch=linesearch,
-                                                      freeze_top=freeze,
-                                                      activation=activation)
-                    break
+        if "upSWIM" in model_name:
+            up = "SWIM"
+        elif "upidentity" in model_name:
+            up = "identity"
+        elif "upiid" in model_name:
+            up = "iid"
+        feat = "SWIM" if "featSWIM" in model_name else "iid"
+        linesearch = True if "linesearchTrue" in model_name else False
+        freeze = True if "freezeTrue" in model_name else False
+        if "GRFRBoost" in model_name:
+            param_grid = GRFRBoost_param_grid(upscale_type=up, 
+                                                feature_type=feat, 
+                                                do_linesearch=linesearch,
+                                                freeze_top=freeze,
+                                                activation=activation)
 
         #run model
-        estimator = WrapperGridSearch(param_grid, seed = args.seed)
+        estimator = WrapperGridSearch(param_grid, seed=args.seed, scoring=scoring)
         train_results, test_results = test_on_PMLBmini(estimator, model_name, args.dataset_indices, args.save_dir)

@@ -32,8 +32,8 @@ class SKLearnWrapper(BaseEstimator, ClassifierMixin):
     
     def predict_proba(self, X):
         #binary classification
-        proba_0 = torch.nn.functional.sigmoid(self.model(X))
-        return torch.cat((1 - proba_0, proba_0), dim=1).cpu().numpy()
+        proba_1 = torch.nn.functional.sigmoid(self.model(X))
+        return torch.cat((1 - proba_1, proba_1), dim=1).cpu().numpy()
     
     def decision_function(self, X):
         logits = self.model(X)
@@ -50,18 +50,18 @@ class SKLearnWrapper(BaseEstimator, ClassifierMixin):
         params.update(self.model_params)
         return params
     
-    def score(self, X, y):
-        logits = self.model(X)
-        if y.size(1) == 1:
-            y_true = y.detach().cpu().numpy()
-            y_score = logits.detach().cpu().numpy()
-            auc = roc_auc_score(y_true, y_score)
-            return auc
-        else:
-            pred = torch.argmax(logits, dim=1)
-            y = torch.argmax(y, dim=1)
-            acc = (pred == y).float().mean()
-            return acc.detach().cpu().item()
+    # def score(self, X, y):
+    #     logits = self.model(X)
+    #     if y.size(1) == 1:
+    #         y_true = y.detach().cpu().numpy()
+    #         y_score = logits.detach().cpu().numpy()
+    #         auc = roc_auc_score(y_true, y_score)
+    #         return auc
+    #     else:
+    #         pred = torch.argmax(logits, dim=1)
+    #         y = torch.argmax(y, dim=1)
+    #         acc = (pred == y).float().mean()
+    #         return acc.detach().cpu().item()
     
     def set_model_eval(self):
         self.model.eval()
