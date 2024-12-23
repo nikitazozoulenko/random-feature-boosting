@@ -71,6 +71,7 @@ class WrapperGridSearch(BaseEstimator, ClassifierMixin):
             param_grid= param_grid,
             cv=StratifiedKFold(n_splits=5),
             verbose=self.verbose,
+            scoring="neg_log_loss",   #scoring=accuracy   #scoring="neg_log_loss"  #scoring="roc_auc"
         )
         grid_search.fit(X, y)
 
@@ -197,8 +198,8 @@ def GRFRBoost_param_grid(
         ):
     param_grid = {
         'modelClass': [GradientRFRBoostClassifier],
-        'l2_cls': [10, 1, 0.1, 0.01, 0.001, 0.0001],
-        'l2_ghat': [10, 1, 0.1, 0.01, 0.001, 0.0001],
+        'l2_cls': [100, 10, 1, 0.1, 0.01, 0.001],
+        'l2_ghat': [10, 1, 0.1, 0.01, 0.001],
         'boost_lr': [10, 1.0, 0.1, 0.01],
         'n_layers': [1, 2, 3],
         'randfeat_xt_dim': [hidden_dim],
