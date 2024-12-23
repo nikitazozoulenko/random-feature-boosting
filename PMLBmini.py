@@ -156,8 +156,8 @@ def End2End_param_grid():
     param_grid = {
         'modelClass': [End2EndMLPResNet],
         'lr': np.logspace(-5, -1, 5),
-        'hidden_dim': [512],
-        'bottleneck_dim': [512],
+        'hidden_dim': [256],
+        'bottleneck_dim': [256],
         'n_blocks': [1, 2, 3],
         'loss': ["bce"],
         'n_epochs': [20, 30, 40, 50],
@@ -173,15 +173,14 @@ def End2End_param_grid():
 def RFNN_param_grid(
         upscale_type: Literal["identity", "SWIM", "iid"],
         activation: Literal["tanh", "relu"] = "tanh",
+        hidden_dim: int = 256,
         ):
     param_grid = {
         'modelClass': [GradientRFRBoostClassifier],
         'n_layers': [0],
         'upscale_type': [upscale_type],
-        'l2_cls': [100, 10, 1, 0.1, 0.01, 0.001, 0.0001],
-        'hidden_dim': ([512]
-                       if upscale_type != "identity" else
-                       [512]),
+        'l2_cls': [10, 1, 0.1, 0.01, 0.001, 0.0001],
+        'hidden_dim': [hidden_dim],
         'activation': [activation],
         }
     return param_grid
@@ -195,13 +194,13 @@ def GRFRBoost_param_grid(
         use_batchnorm: bool = False,
         do_linesearch: bool = False, # find out if good or not
         freeze_top: bool = False,
-        hidden_dim: int = 512,
+        hidden_dim: int = 256,
         ghat_solver: Literal["solve", "ridgecv"] = "solve",
         ):
     param_grid = {
         'modelClass': [GradientRFRBoostClassifier],
-        'l2_cls': [100, 10, 1, 0.1, 0.01, 0.001, 0.0001],
-        'l2_ghat': ([0.01, 0.001, 0.0001, 0.00001] if ghat_solver == "solve"
+        'l2_cls': [10, 1, 0.1, 0.01, 0.001, 0.0001],
+        'l2_ghat': ([0.1, 0.01, 0.001, 0.0001, 0.00001] if ghat_solver == "solve"
                     else [None]),
         'boost_lr': [10, 1.0, 0.1, 0.01],
         'n_layers': [1],
