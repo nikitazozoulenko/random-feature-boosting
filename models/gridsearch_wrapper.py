@@ -1,5 +1,5 @@
 from sklearn.model_selection import GridSearchCV
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.metrics import roc_auc_score
 
 import numpy as np
@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 
 
-class SKLearnWrapper(BaseEstimator):
+class SKLearnWrapper(BaseEstimator, ClassifierMixin):
     def __init__(self, modelClass=None, **model_params,):
         self.modelClass = modelClass
         self.model_params = model_params
@@ -21,10 +21,23 @@ class SKLearnWrapper(BaseEstimator):
 
         self.model = self.modelClass(**self.model_params)
         self.model.fit(X, y)
+        self.classes_ = np.unique([0, 1])
         return self
 
     def predict(self, X):
-        return self.model(X)
+        #binary classification
+        logits = self.model(X)
+        proba = torch.sigmoid(logits).detach().cpu().numpy()
+        return (proba > 0.5).astype(int)
+    
+    def predict_proba(self, X):
+        #binary classification
+        proba_0 = torch.nn.functional.sigmoid(self.model(X))
+        return torch.cat((1 - proba_0, proba_0), dim=1).cpu().numpy()
+    
+    def decision_function(self, X):
+        logits = self.model(X)
+        return logits.detach().cpu().numpy()
 
     def set_params(self, **params):
         self.modelClass = params.pop('modelClass', self.modelClass)

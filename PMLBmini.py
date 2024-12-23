@@ -86,7 +86,7 @@ class WrapperGridSearch(BaseEstimator, ClassifierMixin):
     def predict_proba(self, X):
         X = self.scaler.transform(X.values)
         X = torch.tensor(X).float()
-        proba_0 = torch.nn.functional.sigmoid(self.model.predict(X)).cpu().detach().numpy()
+        proba_0 = self.model.predict_proba(X)
         return np.concatenate((1 - proba_0, proba_0), axis=1)
 
 
