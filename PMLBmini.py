@@ -71,7 +71,7 @@ class WrapperGridSearch(BaseEstimator, ClassifierMixin):
         grid_search = GridSearchCV(
             estimator=estimator,
             param_grid= param_grid,
-            cv=StratifiedKFold(n_splits=5),
+            cv=StratifiedKFold(n_splits=3),
             verbose=self.verbose,
             scoring=self.scoring,   #scoring=accuracy   #scoring="neg_log_loss"  #scoring="roc_auc"
         )
@@ -178,7 +178,7 @@ def RFNN_param_grid(
         'modelClass': [GradientRFRBoostClassifier],
         'n_layers': [0],
         'upscale_type': [upscale_type],
-        'l2_cls': [10, 1, 0.1, 0.01, 0.001, 0.0001],
+        'l2_cls': [100, 10, 1, 0.1, 0.01, 0.001, 0.0001],
         'hidden_dim': ([512]
                        if upscale_type != "identity" else
                        [512]),
@@ -196,11 +196,13 @@ def GRFRBoost_param_grid(
         do_linesearch: bool = False, # find out if good or not
         freeze_top: bool = False,
         hidden_dim: int = 512,
+        ghat_solver: Literal["solve", "ridgecv"] = "solve",
         ):
     param_grid = {
         'modelClass': [GradientRFRBoostClassifier],
-        'l2_cls': [100, 10, 1, 0.1, 0.01, 0.001],
-        'l2_ghat': [10, 1, 0.1, 0.01, 0.001],
+        'l2_cls': [100, 10, 1, 0.1, 0.01, 0.001, 0.0001],
+        'l2_ghat': ([0.00001] if ghat_solver == "solve"
+                    else [None]),
         'boost_lr': [10, 1.0, 0.1, 0.01],
         'n_layers': [1, 2, 3],
         'randfeat_xt_dim': [hidden_dim],

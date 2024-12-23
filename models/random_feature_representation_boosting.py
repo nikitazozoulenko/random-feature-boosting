@@ -11,7 +11,7 @@ import torchmin
 
 from models.sandwiched_least_squares import sandwiched_LS_dense, sandwiched_LS_diag, sandwiched_LS_scalar
 from models.swim import SWIMLayer
-from models.base import FittableModule, RidgeModule, FittableSequential, Identity, LogisticRegression
+from models.base import FittableModule, RidgeModule, RidgeCVModule, FittableSequential, Identity, LogisticRegression
 
 
 
@@ -561,13 +561,21 @@ class GhatGradientLayerCrossEntropy(GhatBoostingLayer):
                  hidden_dim: int,
                  l2_ghat: float,
                  do_linesearch: bool,
+                 ghat_ridge_solver: Literal["lbfgs", "solve", "ridgecv"] = "solve",
                  ):
         self.n_classes = n_classes
         self.hidden_dim = hidden_dim
         self.l2_ghat = l2_ghat
         self.do_linesearch = do_linesearch
         super(GhatGradientLayerCrossEntropy, self).__init__()
-        self.ridge = RidgeModule(l2_ghat)
+        if ghat_ridge_solver == "lbfgs":
+            raise NotImplementedError("L-BFGS not implemented yet")
+        elif ghat_ridge_solver == "solve":
+            self.ridge = RidgeModule(l2_ghat)
+        elif ghat_ridge_solver == "ridgecv":
+            self.ridge = RidgeCVModule()
+        else:
+            raise ValueError(f"Unknown ghat ridge solver {ghat_ridge_solver}")
 
 
     def fit_transform(self, F: Tensor, Xt: Tensor, y: Tensor, auxiliary_cls: LogisticRegression) -> Tensor:
@@ -622,7 +630,7 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
                  boost_lr: float = 1.0,
                  feature_type : Literal["iid", "SWIM"] = "SWIM",
                  upscale_type: Literal["iid", "SWIM", "identity"] = "iid",
-                 ghat_ridge_solver: Literal["lbfgs", "analytic"] = "analytic", #TODO not currently supported
+                 ghat_ridge_solver: Literal["lbfgs", "solve", "ridgecv"] = "solve",
                  lbfgs_lr: float = 1.0,
                  lbfgs_max_iter: int = 300,
                  use_batchnorm: bool = True,
@@ -689,7 +697,7 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
 
         # ghat boosting layers
         ghat_boosting_layers = [
-            GhatGradientLayerCrossEntropy(n_classes, hidden_dim, l2_ghat, do_linesearch)
+            GhatGradientLayerCrossEntropy(n_classes, hidden_dim, l2_ghat, do_linesearch, ghat_ridge_solver)
             for t in range(n_layers)
         ]
 

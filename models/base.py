@@ -82,14 +82,14 @@ FittableSequential = make_fittable(nn.Sequential)
 
 class RidgeCVModule(FittableModule):
     def __init__(self, 
-                lower_alpha: float = 1e-6,
-                upper_alpha: float = 10,
-                n_alphas: int = 10,
+                lower: float = -6,
+                upper: float = 2,
+                n_alphas: int = 9,
                 ):
         """Ridge Regression with optimal l2_reg optimization by
         approximate leave-one-out cross-validation (ALOOCV)"""
         super(RidgeCVModule, self).__init__()
-        self.alphas = np.logspace(np.log10(lower_alpha), np.log10(upper_alpha), n_alphas)
+        self.alphas = np.logspace(lower, upper, n_alphas)
         self.W = None
         self.b = None
         self._alpha = None
@@ -97,6 +97,7 @@ class RidgeCVModule(FittableModule):
     def fit(self, X: Tensor, y: Tensor, **kwargs):
         """Fit the RidgeCV model with ALOOCV"""
         self.W, self.b, self._alpha = fit_ridge_ALOOCV(X, y, alphas=self.alphas)
+        print("alpha", self._alpha)
         return self
 
     def forward(self, X: Tensor) -> Tensor:
