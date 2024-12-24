@@ -6,7 +6,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-
 class SKLearnWrapper(BaseEstimator, ClassifierMixin):
     def __init__(self, modelClass=None, **model_params,):
         self.modelClass = modelClass
@@ -21,19 +20,34 @@ class SKLearnWrapper(BaseEstimator, ClassifierMixin):
 
         self.model = self.modelClass(**self.model_params)
         self.model.fit(X, y)
-        self.classes_ = np.unique([0, 1])
+
+        #classes, either label for binary or one-hot for multiclass
+        if len(y.size()) == 1 or y.size(1) == 1:
+            self.classes_ = np.unique(y.detach().cpu().numpy())
+        else:
+            self.classes_ = np.unique(y.argmax(axis=1).detach().cpu().numpy())
         return self
+
 
     def predict(self, X):
         #binary classification
-        logits = self.model(X)
-        proba = torch.sigmoid(logits).detach().cpu().numpy()
-        return (proba > 0.5).astype(int)
+        if len(self.classes_) == 2:
+            proba_1 = torch.sigmoid(self.model(X))
+            return (proba_1 > 0.5).detach().cpu().numpy()
+        else:
+            #multiclass
+            return torch.argmax(self.model(X), dim=1).detach().cpu().numpy()
     
     def predict_proba(self, X):
         #binary classification
-        proba_1 = torch.nn.functional.sigmoid(self.model(X))
-        return torch.cat((1 - proba_1, proba_1), dim=1).cpu().numpy()
+        if len(self.classes_) == 2:
+            proba_1 = torch.nn.functional.sigmoid(self.model(X))
+            return torch.cat((1 - proba_1, proba_1), dim=1).detach().cpu().numpy()
+        else:
+            #multiclass
+            logits = self.model(X)
+            proba = torch.nn.functional.softmax(logits, dim=1)
+            return proba.detach().cpu().numpy()
     
     def decision_function(self, X):
         logits = self.model(X)
@@ -50,18 +64,18 @@ class SKLearnWrapper(BaseEstimator, ClassifierMixin):
         params.update(self.model_params)
         return params
     
-    # def score(self, X, y):
-    #     logits = self.model(X)
-    #     if y.size(1) == 1:
-    #         y_true = y.detach().cpu().numpy()
-    #         y_score = logits.detach().cpu().numpy()
-    #         auc = roc_auc_score(y_true, y_score)
-    #         return auc
-    #     else:
-    #         pred = torch.argmax(logits, dim=1)
-    #         y = torch.argmax(y, dim=1)
-    #         acc = (pred == y).float().mean()
-    #         return acc.detach().cpu().item()
+    def score(self, X, y):
+        logits = self.model(X)
+        if y.size(1) == 1:
+            y_true = y.detach().cpu().numpy()
+            y_score = logits.detach().cpu().numpy()
+            auc = roc_auc_score(y_true, y_score)
+            return auc
+        else:
+            pred = torch.argmax(logits, dim=1)
+            y = torch.argmax(y, dim=1)
+            acc = (pred == y).float().mean()
+            return acc.detach().cpu().item()
     
     def set_model_eval(self):
         self.model.eval()

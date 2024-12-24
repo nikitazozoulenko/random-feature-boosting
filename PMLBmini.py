@@ -75,7 +75,7 @@ class WrapperGridSearch(BaseEstimator, ClassifierMixin):
             cv=StratifiedKFold(n_splits=5),
             verbose=self.verbose,
             scoring=self.scoring,   # scoring=accuracy   # scoring="neg_log_loss"  # scoring="roc_auc"
-            error_score = -1e6 if scoring=="neg_log_loss" else 0,
+            #error_score = -1e6 if scoring=="neg_log_loss" else 0,
         )
 
         # fit model
