@@ -202,7 +202,7 @@ def GRFRBoost_param_grid(
     param_grid = {
         'modelClass': [GradientRFRBoostClassifier],
         'l2_cls': [100, 10, 1, 0.1, 0.01, 0.001, 0.0001],    # 2 to -4
-        'l2_ghat': ([1e-1, 1e-2, 1e-3, 1e-4] if ghat_solver == "solve"   #-2 to -4
+        'l2_ghat': ([1e-4] if ghat_solver == "solve"   #-2 to -4
                     else [None]),
         'boost_lr': [10, 1.0, 0.1, 0.01],
         'n_layers': [1],
