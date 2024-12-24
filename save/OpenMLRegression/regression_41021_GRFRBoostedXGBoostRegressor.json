@@ -1,0 +1,68 @@
+{
+    "41021": {
+        "GRFRBoostedXGBoostRegressor": {
+            "score_train": [
+                0.30612799525260925,
+                0.3163411319255829
+            ],
+            "score_test": [
+                0.44725465774536133,
+                0.44755446910858154
+            ],
+            "t_fit": [
+                0.7259753579999142,
+                0.20649719199991523
+            ],
+            "t_inference": [
+                0.006478705000063201,
+                0.0048587530000077095
+            ],
+            "hyperparams": [
+                {
+                    "in_dim": 72,
+                    "out_dim": 1,
+                    "upscale_type": "identity",
+                    "feature_type": "SWIM",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 0,
+                    "activation": "tanh",
+                    "n_layers": 1,
+                    "boost_lr": 1.0,
+                    "return_features": true,
+                    "objective": "reg:squarederror",
+                    "l2_reg": 0.3470266988650412,
+                    "l2_ghat": 1.461086588628719e-07,
+                    "alpha": 0.008123245085588688,
+                    "lambda": 14.528246637516036,
+                    "learning_rate": 0.022948683681130556,
+                    "n_estimators": 97,
+                    "max_depth": 4,
+                    "subsample": 0.5129695700716763,
+                    "colsample_bytree": 0.6673295021425665
+                },
+                {
+                    "in_dim": 72,
+                    "out_dim": 1,
+                    "upscale_type": "identity",
+                    "feature_type": "SWIM",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 0,
+                    "activation": "tanh",
+                    "n_layers": 1,
+                    "boost_lr": 1.0,
+                    "return_features": true,
+                    "objective": "reg:squarederror",
+                    "l2_reg": 0.3470266988650412,
+                    "l2_ghat": 1.461086588628719e-07,
+                    "alpha": 0.008123245085588688,
+                    "lambda": 14.528246637516036,
+                    "learning_rate": 0.022948683681130556,
+                    "n_estimators": 97,
+                    "max_depth": 4,
+                    "subsample": 0.5129695700716763,
+                    "colsample_bytree": 0.6673295021425665
+                }
+            ]
+        }
+    }
+}

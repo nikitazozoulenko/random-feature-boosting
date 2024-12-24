@@ -86,7 +86,7 @@ class GRFRBoostedXGBoostRegressor(FittableModule):
     def __init__(self, 
                  **kwargs,
                  ):
-        super(XGBoostRegressorWrapper, self).__init__()
+        super(GRFRBoostedXGBoostRegressor, self).__init__()
         xgboost_args = [
             "objective",
             "alpha",
