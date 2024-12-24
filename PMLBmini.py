@@ -181,7 +181,7 @@ def RFNN_param_grid(
         'modelClass': [GradientRFRBoostClassifier],
         'n_layers': [0],
         'upscale_type': [upscale_type],
-        'l2_cls': [10, 1, 0.1, 0.01, 0.001, 0.0001],
+        'l2_cls': [100, 10, 1, 0.1, 0.01, 0.001, 0.0001],
         'hidden_dim': [hidden_dim],
         'activation': [activation],
         }
@@ -201,8 +201,8 @@ def GRFRBoost_param_grid(
         ):
     param_grid = {
         'modelClass': [GradientRFRBoostClassifier],
-        'l2_cls': [10, 1, 0.1, 0.01, 0.001, 0.0001],    # 1 to -4
-        'l2_ghat': ([1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7] if ghat_solver == "solve"   #0 to -5
+        'l2_cls': [100, 10, 1, 0.1, 0.01, 0.001, 0.0001],    # 2 to -4
+        'l2_ghat': ([1e-2, 1e-3, 1e-4, 1e-5, 1e-6] if ghat_solver == "solve"   #-2 to -6
                     else [None]),
         'boost_lr': [10, 1.0, 0.1, 0.01],
         'n_layers': [1],
