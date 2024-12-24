@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch import Tensor, tensor
 
 from models.base import RidgeModule
-from models.xgboost_wrapper import XGBoostRegressorWrapper
+from models.xgboost_wrapper import XGBoostRegressorWrapper, GRFRBoostedXGBoostRegressor
 from models.end2end import End2EndMLPResNet
 from models.random_feature_representation_boosting import GradientRFRBoostRegressor, GreedyRFRBoostRegressor
 from optuna_kfoldCV import evaluate_pytorch_model_kfoldcv
@@ -195,6 +195,52 @@ def evaluate_Ridge(
 
 
 
+def evaluate_GRFRBoostedXGBoostRegressor(
+        X: Tensor,
+        y: Tensor,
+        k_folds: int,
+        cv_seed: int,
+        regression_or_classification: str,
+        n_optuna_trials: int,
+        device: Literal["cpu", "cuda"],
+        early_stopping_patience: int,
+        ):
+    ModelClass = GRFRBoostedXGBoostRegressor
+    get_optuna_params = lambda trial : {
+        #fixed
+        "in_dim": trial.suggest_categorical("in_dim", [X.size(1)]),
+        "out_dim": trial.suggest_categorical("out_dim", [y.size(1)]),
+        "upscale_type": trial.suggest_categorical("upscale_type", ["identity"]),
+        "feature_type": trial.suggest_categorical("feature_type", ["SWIM"]),
+        "randfeat_xt_dim": trial.suggest_categorical("randfeat_xt_dim", [512]),
+        "randfeat_x0_dim": trial.suggest_categorical("randfeat_x0_dim", [0]),
+        "activation": trial.suggest_categorical("activation", ["tanh"]),
+        "n_layers": trial.suggest_categorical("n_layers", [1]),
+        "boost_lr": trial.suggest_categorical("boost_lr", [1.0]),
+        "return_features": trial.suggest_categorical("return_features", [True]),
+
+        "objective": trial.suggest_categorical("objective", ["reg:squarederror"]),
+
+        #hyperparms
+        "l2_reg": trial.suggest_float("l2_reg", 1e-4, 10, log=True),
+        "l2_ghat": trial.suggest_float("l2_ghat", 1e-7, 10, log=True),
+
+        "alpha": trial.suggest_float("alpha", 0.00001, 0.01, log=True),
+        "lambda": trial.suggest_float("lambda", 1e-3, 100.0, log=True),
+        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.5, log=True),
+        "n_estimators": trial.suggest_int("n_estimators", 50, 2000, log=True),
+        "max_depth": trial.suggest_int("max_depth", 3, 10),
+        "subsample": trial.suggest_float("subsample", 0.3, 1.0),
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.3, 1.0),
+    }
+
+    return evaluate_pytorch_model_kfoldcv(
+        ModelClass, get_optuna_params, X, y, k_folds, cv_seed, 
+        regression_or_classification, n_optuna_trials, device, early_stopping_patience
+    )
+
+
+
 def evaluate_XGBoostRegressor(
         X: Tensor,
         y: Tensor,
@@ -341,6 +387,8 @@ if __name__ == "__main__":
             eval_fun = evaluate_Ridge
         elif model_name == "XGBoostRegressor":
             eval_fun = evaluate_XGBoostRegressor
+        elif model_name == "GRFRBoostedXGBoostRegressor":
+            eval_fun = evaluate_GRFRBoostedXGBoostRegressor
         # RFNN
         elif model_name == "RandomFeatureNetwork":
             eval_fun = get_RandomFeatureNetwork_eval_fun("SWIM", "tanh")

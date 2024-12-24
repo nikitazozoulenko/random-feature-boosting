@@ -112,6 +112,7 @@ class BaseGRFRBoost(FittableModule):
             boost_lr: float = 1.0,
             use_batchnorm: bool = True,
             freeze_top_at_t: Optional[int] = None,
+            return_features: bool = False,  #logits or features
             ):
         """
         Base class for Greedy Random Feature Boosting.
@@ -121,6 +122,7 @@ class BaseGRFRBoost(FittableModule):
         super(BaseGRFRBoost, self).__init__()
         self.boost_lr = boost_lr
         self.freeze_top_at_t = freeze_top_at_t
+        self.return_features = return_features
 
         self.upscale = upscale # simple upscale layer, same for everyone
         self.top_level_modules = nn.ModuleList(top_level_modules) # either ridge, or multiclass logistic, or binary logistic
@@ -190,7 +192,10 @@ class BaseGRFRBoost(FittableModule):
                 X = X + self.boost_lr * Ghat
                 X = batchnorm(X)
             # Top level regressor
-            return self.top_level_modules[-1](X)
+            if self.return_features:
+                return X
+            else:
+                return self.top_level_modules[-1](X)
         
 
 
@@ -381,6 +386,7 @@ class GreedyRFRBoostRegressor(BaseGRFRBoost):
                  iid_scale: float = 1.0,
                  SWIM_scale: float = 0.5,
                  activation: Literal["tanh", "relu"] = "tanh",
+                 return_features: bool = False,  #logits or features
                  ):
         """
         Tabular Greedy Random Feaute Boosting.
@@ -440,7 +446,7 @@ class GreedyRFRBoostRegressor(BaseGRFRBoost):
         ]
 
         super(GreedyRFRBoostRegressor, self).__init__(
-            upscale, top_level_regs, random_feature_layers, ghat_boosting_layers, boost_lr, use_batchnorm
+            upscale, top_level_regs, random_feature_layers, ghat_boosting_layers, boost_lr, use_batchnorm, return_features=return_features
         )
 
 
@@ -463,6 +469,7 @@ class GradientRFRBoostRegressor(BaseGRFRBoost):
                  iid_scale: float = 1.0,
                  SWIM_scale: float = 0.5,
                  activation: Literal["tanh", "relu"] = "tanh",
+                 return_features: bool = False,  #logits or features
                  ):
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -507,7 +514,7 @@ class GradientRFRBoostRegressor(BaseGRFRBoost):
         ]
 
         super(GradientRFRBoostRegressor, self).__init__(
-            upscale, top_level_regs, random_feature_layers, ghat_boosting_layers, boost_lr, use_batchnorm
+            upscale, top_level_regs, random_feature_layers, ghat_boosting_layers, boost_lr, use_batchnorm, return_features=return_features
         )
 
 
@@ -638,7 +645,8 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
                  SWIM_scale: float = 0.5,
                  activation: Literal["tanh", "relu"] = "tanh",
                  do_linesearch: bool = True,
-                 freeze_top_at_t: Optional[int] = None
+                 freeze_top_at_t: Optional[int] = None,
+                 return_features: bool = False,  #logits or features
                  ):
         """TODO
 
@@ -702,6 +710,6 @@ class GradientRFRBoostClassifier(BaseGRFRBoost):
         ]
 
         super(GradientRFRBoostClassifier, self).__init__(
-            upscale, top_level_classifiers, random_feature_layers, ghat_boosting_layers, boost_lr, use_batchnorm, freeze_top_at_t
+            upscale, top_level_classifiers, random_feature_layers, ghat_boosting_layers, boost_lr, use_batchnorm, freeze_top_at_t, return_features
         )
 

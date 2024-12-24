@@ -45,7 +45,7 @@ class XGBoostRegressorWrapper(FittableModule):
             y_pred_np = y_pred_np[:, None]
         return torch.tensor(y_pred_np, dtype=X.dtype, device=X.device)
     
-    
+
 
 class XGBoostClassifierWrapper(FittableModule):
     def __init__(self, 
@@ -71,3 +71,60 @@ class XGBoostClassifierWrapper(FittableModule):
         X_np = X.detach().cpu().numpy()
         y_pred_np = self.model.predict_proba(X_np)
         return torch.tensor(y_pred_np, dtype=X.dtype, device=X.device)
+    
+
+
+
+
+
+
+
+from models.random_feature_representation_boosting import GradientRFRBoostRegressor
+
+
+class GRFRBoostedXGBoostRegressor(FittableModule):
+    def __init__(self, 
+                 **kwargs,
+                 ):
+        super(XGBoostRegressorWrapper, self).__init__()
+        xgboost_args = [
+            "objective",
+            "alpha",
+            "lambda",
+            "learning_rate",
+            "n_estimators",
+            "max_depth",
+            "subsample",
+            "colsample_bytree",
+        ]
+        grfr_args = [
+            "in_dim",
+            "out_dim",
+            "upscale_type",
+            "feature_type",
+            "randfeat_xt_dim",
+            "randfeat_x0_dim",
+            "activation",
+            "n_layers",
+            "boost_lr",
+            "l2_reg",
+            "l2_ghat",
+            "return_features",
+        ]
+        self.xgb_wrapper = XGBoostRegressorWrapper(
+            **{k: v for k, v in kwargs.items() if k in xgboost_args},
+        )
+        self.grfr = GradientRFRBoostRegressor(
+            **{k: v for k, v in kwargs.items() if k in grfr_args},
+        )
+
+
+    def fit(self, X: Tensor, y: Tensor) -> Tuple[Tensor, Tensor]:
+        boosted_representation = self.grfr.fit_transform(X, y)
+        self.xgb_wrapper.fit(boosted_representation, y)
+        return self
+
+
+    def forward(self, X: Tensor) -> Tensor:
+        boosted_representation = self.grfr(X)
+        return self.xgb_wrapper(boosted_representation)
