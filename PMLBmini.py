@@ -67,17 +67,19 @@ class WrapperGridSearch(BaseEstimator, ClassifierMixin):
             param_grid["out_dim"] = [1]
         else:
             param_grid["n_classes"] = [2]
+
         estimator = SKLearnWrapper()
         grid_search = GridSearchCV(
             estimator=estimator,
-            param_grid= param_grid,
+            param_grid=param_grid,
             cv=StratifiedKFold(n_splits=5),
             verbose=self.verbose,
-            scoring=self.scoring,   #scoring=accuracy   #scoring="neg_log_loss"  #scoring="roc_auc"
+            scoring=self.scoring,   # scoring=accuracy   # scoring="neg_log_loss"  # scoring="roc_auc"
+            error_score = -1e6 if scoring=="neg_log_loss" else 0,
         )
-        grid_search.fit(X, y)
 
-        # fit best model
+        # fit model
+        grid_search.fit(X, y)
         best_model = grid_search.best_estimator_
         print("Best params:", grid_search.best_params_)
         best_model.set_model_eval()
@@ -199,8 +201,8 @@ def GRFRBoost_param_grid(
         ):
     param_grid = {
         'modelClass': [GradientRFRBoostClassifier],
-        'l2_cls': [10, 1, 0.1, 0.01, 0.001, 0.0001],
-        'l2_ghat': ([1, 0.1, 0.01, 0.001, 0.0001, 0.00001] if ghat_solver == "solve"
+        'l2_cls': [10, 1, 0.1, 0.01, 0.001, 0.0001],    # 1 to -4
+        'l2_ghat': ([1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7] if ghat_solver == "solve"   #0 to -5
                     else [None]),
         'boost_lr': [10, 1.0, 0.1, 0.01],
         'n_layers': [1],
