@@ -218,6 +218,7 @@ def evaluate_GRFRBoostedXGBoostRegressor(
         "n_layers": trial.suggest_categorical("n_layers", [1]),
         "boost_lr": trial.suggest_categorical("boost_lr", [1.0]),
         "return_features": trial.suggest_categorical("return_features", [True]),
+        "use_batchnorm": trial.suggest_categorical("use_batchnorm", [False]),
 
         "objective": trial.suggest_categorical("objective", ["reg:squarederror"]),
 

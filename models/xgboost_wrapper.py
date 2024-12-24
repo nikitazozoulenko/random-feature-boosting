@@ -110,6 +110,7 @@ class GRFRBoostedXGBoostRegressor(FittableModule):
             "l2_reg",
             "l2_ghat",
             "return_features",
+            "use_batchnorm",
         ]
         self.xgb_wrapper = XGBoostRegressorWrapper(
             **{k: v for k, v in kwargs.items() if k in xgboost_args},
