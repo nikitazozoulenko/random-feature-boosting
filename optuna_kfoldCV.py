@@ -31,7 +31,18 @@ openML_reg_ids = np.array([
     44964, 44965, 44966, 44967, 44969, 44970, 44971, 44972, 
     44973, 44974, 44975, 44976, 44977, 44978, 44979, 44980, 
     44981, 44983, 44984, 44987, 44989, 44990, 44992, 44993, 
-    44994, 45012, 45402
+    44994, 45012, 45402,
+    ])
+
+openML_cls_ids = np.array([
+    3,     6,     11,    12,    14,    15,    16,    18,    22,    23,
+    28,    29,    31,    32,    37,    38,    44,    46,    50,    54,
+    151,   182,   188,   300,   307,   458,   469,   554,   1049,  1050,
+    1053,  1063,  1067,  1068,  1461,  1462,  1464,  1468,  1475,  1478,
+    1480,  1485,  1486,  1487,  1489,  1494,  1497,  1501,  1510,  1590,
+    4134,  4534,  4538,  6332,  23381, 23517, 40499, 40668, 40670, 40701,
+    40923, 40927, 40966, 40975, 40978, 40979, 40982, 40983, 40984, 40994,
+    40996, 41027,
     ])
 
 def np_load_openml_dataset(
@@ -53,15 +64,16 @@ def np_load_openml_dataset(
     dataset = openml.datasets.get_dataset(dataset_id)
     df, _, categorical_indicator, attribute_names = dataset.get_data()
     
+    # for classification, dont convert label to onehot
+    if regression_or_classification == "classification":
+        target_index = attribute_names.index(dataset.default_target_attribute)
+        categorical_indicator[target_index] = False
+    
     # Dataset 44962 has categorical month and day
     if dataset_id == 44962:
         categorical_indicator[2:4] = [True, True]
         df['month'] = df['month'].astype('category')
         df['day'] = df['day'].astype('category')
-    elif dataset_id == 44992:
-        idx = df.columns.get_loc('GpuNumberOfExecutionUnits')
-        df = df.drop(columns=['GpuNumberOfExecutionUnits'])
-        categorical_indicator = np.delete(categorical_indicator, idx)
 
     # Replace missing values with the median for numerical columns
     for col in df.columns:
@@ -69,7 +81,6 @@ def np_load_openml_dataset(
             df[col] = df[col].fillna(df[col].mode()[0])
         else:
             df[col] = df[col].fillna(df[col].median())
-    #df = df.dropna() # other option
     
     # One-hot encode categorical variables
     df = pd.get_dummies(df, columns=df.columns[categorical_indicator])
@@ -77,7 +88,7 @@ def np_load_openml_dataset(
     # Separate target variable
     y = np.array(df.pop(dataset.default_target_attribute))
     X = np.array(df).astype(np.float32)
-    
+
     # Set seed and shuffle data
     np.random.seed(seed)
     indices = np.random.permutation(X.shape[0])
@@ -100,7 +111,15 @@ def np_load_openml_dataset(
         y = np.clip(y, -3, 3)
         y = y.astype(np.float32)
     else:
-        y = pd.get_dummies(y).values.astype(np.float32)
+        if len(np.unique(y)) > 2:
+            # Convert to pandas categorical first to handle string labels
+            y_series = pd.Series(y.ravel())
+            y = pd.get_dummies(y_series).values.astype(np.float32)
+        else:
+            # For binary classification, convert labels to 0/1
+            unique_labels = np.unique(y)
+            label_map = {unique_labels[0]: 0, unique_labels[1]: 1}
+            y = np.array([label_map[val] for val in y], dtype=np.float32)[..., None]
 
     return X, y
 
