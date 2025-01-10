@@ -34,21 +34,32 @@ openML_reg_ids = np.array([
     44994, 45012, 45402,
     ])
 
-openML_cls_ids = np.array([
-    3,     6,     11,    12,    14,    15,    16,    18,    22,    23,
-    28,    29,    31,    32,    37,    38,    44,    46,    50,    54,
-    151,   182,   188,   300,   307,   458,   469,   554,   1049,  1050,
-    1053,  1063,  1067,  1068,  1461,  1462,  1464,  1468,  1475,  1478,
-    1480,  1485,  1486,  1487,  1489,  1494,  1497,  1501,  1510,  1590,
-    4134,  4534,  4538,  6332,  23381, 23517, 40499, 40668, 40670, 40701,
-    40923, 40927, 40966, 40975, 40978, 40979, 40982, 40983, 40984, 40994,
-    40996, 41027,
+openML_cls_ids = np.array([ # n_features < 200 after one-hot
+    3,     6,     11,           14,    15,    16,    18,    22,    23,
+    28,    29,    31,    32,    37,    38,    44,           50,    54,
+    151,   182,   188,          307,   458,   469,          1049,  1050,
+    1053,  1063,  1067,  1068,  1461,  1462,  1464,         1475,       
+    1480,         1486,  1487,  1489,  1494,  1497,         1510,  1590,
+           4534,  4538,  6332,  23381, 23517, 40499, 40668,        40701,
+                  40966, 40975,               40982, 40983, 40984, 40994,
+           41027,
     ])
+
+# openML_cls_ids = np.array([
+#     3,     6,     11,    12,    14,    15,    16,    18,    22,    23,
+#     28,    29,    31,    32,    37,    38,    44,    46,    50,    54,
+#     151,   182,   188,   300,   307,   458,   469,   554,   1049,  1050,
+#     1053,  1063,  1067,  1068,  1461,  1462,  1464,  1468,  1475,  1478,
+#     1480,  1485,  1486,  1487,  1489,  1494,  1497,  1501,  1510,  1590,
+#     4134,  4534,  4538,  6332,  23381, 23517, 40499, 40668, 40670, 40701,
+#     40923, 40927, 40966, 40975, 40978, 40979, 40982, 40983, 40984, 40994,
+#     40996, 41027,
+#     ])
 
 def np_load_openml_dataset(
         dataset_id: int, 
         regression_or_classification: str = "regression",
-        max_samples: int = 5000,
+        max_samples: int = 500, # TODO FIX
         seed: int = 42,
         ) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -76,11 +87,23 @@ def np_load_openml_dataset(
         df['day'] = df['day'].astype('category')
 
     # Replace missing values with the median for numerical columns
+    # for col in df.columns:
+    #     if df[col].dtype.name == 'category':
+    #         df[col] = df[col].fillna(df[col].mode()[0])
+    #     else:
+    #         df[col] = df[col].fillna(df[col].median())
     for col in df.columns:
-        if df[col].dtype.name == 'category':
-            df[col] = df[col].fillna(df[col].mode()[0])
+        if pd.api.types.is_categorical_dtype(df[col]) or df[col].dtype == 'object':
+            # For categorical columns, check if mode exists
+            mode_value = df[col].mode()
+            fill_value = mode_value[0] if not mode_value.empty else 0
+            df[col] = df[col].fillna(fill_value).astype('category')
         else:
-            df[col] = df[col].fillna(df[col].median())
+            # For numerical columns, fill with median or 0 if all NaN
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            median_value = df[col].median()
+            df[col] = df[col].fillna(median_value if pd.notnull(median_value) else 0)
+
     
     # One-hot encode categorical variables
     df = pd.get_dummies(df, columns=df.columns[categorical_indicator])
@@ -198,10 +221,25 @@ def get_pytorch_optuna_cv_objective(
 
             preds = model(X_inner_valid)
             if regression_or_classification == "classification":
-                preds = torch.argmax(preds, dim=1)
-                gt = torch.argmax(y_inner_valid, dim=1)
-                acc = (preds == gt).float().mean()
-                scores.append(-acc.item()) #score is being minimized in Optuna
+                if y_inner_valid.shape[1] > 2:  # Multiclass classification
+                    loss = nn.CrossEntropyLoss()
+                    y_inner_valid_labels = torch.argmax(y_inner_valid, dim=1)
+                    ce_loss = loss(preds, y_inner_valid_labels)
+                    scores.append(ce_loss.item())
+                else:  # Binary classification
+                    loss = nn.BCEWithLogitsLoss()
+                    ce_loss = loss(preds, y_inner_valid)
+                    scores.append(ce_loss.item()) 
+            # if regression_or_classification == "classification":
+            #     if y_inner_valid.shape[1] > 2:  # Multiclass classification
+            #         preds = torch.argmax(preds, dim=1)
+            #         gt = torch.argmax(y_inner_valid, dim=1)
+            #         acc = (preds == gt).float().mean()
+            #         scores.append(-acc.item())  # score is being minimized in Optuna
+            #     else:  # Binary classification
+            #         preds = torch.sigmoid(preds).round()
+            #         acc = (preds == y_inner_valid).float().mean()
+            #         scores.append(-acc.item())  # score is being minimized in Optuna
             else:
                 rmse = torch.sqrt(nn.functional.mse_loss(y_inner_valid, preds))
                 scores.append(rmse.item())

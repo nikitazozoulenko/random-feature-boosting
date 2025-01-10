@@ -190,7 +190,7 @@ class LogisticRegression(FittableModule):
                  n_classes: int = 10,
                  l2_lambda: float = 0.001,
                  lr: float = 1.0,
-                 max_iter: int = 100,
+                 max_iter: int = 300,
                  ):
         super(LogisticRegression, self).__init__()
         self.n_classes = n_classes

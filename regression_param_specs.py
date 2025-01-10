@@ -21,7 +21,7 @@ from optuna_kfoldCV import evaluate_pytorch_model_kfoldcv
 def get_GradientRFRBoost_eval_fun(
         feature_type: Literal["iid", "SWIM"] = "SWIM",
         upscale_type: Literal["iid", "SWIM", "identity"] = "SWIM",
-        activation: nn.Module = nn.Tanh(),
+        activation: str = "tanh",
         ):
     """Returns a function that evaluates the GradientRFRBoost model
     with the specified number of layers"""
@@ -75,7 +75,7 @@ def get_GreedyRFRBoost_eval_fun(
         feature_type: Literal["iid", "SWIM"] = "SWIM",
         upscale_type: Literal["iid", "SWIM", "identity"] = "SWIM",
         sandwich_solver: Literal["dense", "diag", "scalar"] = "dense",
-        activation: nn.Module = nn.Tanh(),
+        activation: str = "tanh",
         ):
     """Returns a function that evaluates the GreedyRFRBoost model
     with the specified number of layers"""
@@ -133,7 +133,7 @@ def get_GreedyRFRBoost_eval_fun(
 
 def get_RandomFeatureNetwork_eval_fun(
         feature_type: Literal["iid", "SWIM"] = "SWIM",
-        activation: nn.Module = nn.Tanh(),
+        activation: str = "tanh",
         ):
     """Returns a function that evaluates the RandomFeatureNetwork model
     (1 hidden layer random neural network)"""
@@ -229,7 +229,7 @@ def evaluate_GRFRBoostedXGBoostRegressor(
         "alpha": trial.suggest_float("alpha", 0.00001, 0.01, log=True),
         "lambda": trial.suggest_float("lambda", 1e-3, 100.0, log=True),
         "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.5, log=True),
-        "n_estimators": trial.suggest_int("n_estimators", 50, 2000, log=True),
+        "n_estimators": trial.suggest_int("n_estimators", 50, 1000, log=True),
         "max_depth": trial.suggest_int("max_depth", 3, 10),
         "subsample": trial.suggest_float("subsample", 0.3, 1.0),
         "colsample_bytree": trial.suggest_float("colsample_bytree", 0.3, 1.0),
@@ -260,10 +260,10 @@ def evaluate_XGBoostRegressor(
         "alpha": trial.suggest_float("alpha", 0.00001, 0.01, log=True),
         "lambda": trial.suggest_float("lambda", 1e-3, 100.0, log=True),
         "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.5, log=True),
-        "n_estimators": trial.suggest_int("n_estimators", 50, 2000, log=True),
-        "max_depth": trial.suggest_int("max_depth", 3, 10),
-        "subsample": trial.suggest_float("subsample", 0.3, 1.0),
-        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.3, 1.0),
+        "n_estimators": trial.suggest_int("n_estimators", 50, 1000, log=True),
+        "max_depth": trial.suggest_int("max_depth", 1, 10),
+        # "subsample": trial.suggest_float("subsample", 0.3, 1.0),
+        # "colsample_bytree": trial.suggest_float("colsample_bytree", 0.3, 1.0),
     }
 
     return evaluate_pytorch_model_kfoldcv(
