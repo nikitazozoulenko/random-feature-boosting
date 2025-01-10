@@ -283,13 +283,13 @@ if __name__ == "__main__":
         elif model_name == "XGBoostClassifier":
             eval_fun = evaluate_XGBoostClassifier
         # RFNN
-        elif model_name == "RandomFeatureNetwork":
+        elif model_name == "RFNN":
             eval_fun = get_RandomFeatureNetwork_eval_fun("SWIM", "tanh")
-        elif model_name == "RandomFeatureNetwork_iid":
+        elif model_name == "RFNN_iid":
             eval_fun = get_RandomFeatureNetwork_eval_fun("iid", "tanh")
-        elif model_name == "RandomFeatureNetwork_relu":
+        elif model_name == "RFNN_relu":
             eval_fun = get_RandomFeatureNetwork_eval_fun("SWIM", "relu")
-        elif model_name == "RandomFeatureNetwork_iid_relu":
+        elif model_name == "RFNN_iid_relu":
             eval_fun = get_RandomFeatureNetwork_eval_fun("iid", "relu")
         # GRFRBoost
         elif "RFRBoost" in model_name:
