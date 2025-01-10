@@ -59,7 +59,7 @@ openML_cls_ids = np.array([ # n_features < 200 after one-hot
 def np_load_openml_dataset(
         dataset_id: int, 
         regression_or_classification: str = "regression",
-        max_samples: int = 500, # TODO FIX
+        max_samples: int = 5000,
         seed: int = 42,
         ) -> Tuple[np.ndarray, np.ndarray]:
     """
