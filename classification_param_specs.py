@@ -151,6 +151,7 @@ def evaluate_XGBoostClassifier(
     get_optuna_params = lambda trial : {
         #fixed
         "objective": trial.suggest_categorical("objective", ["binary:logistic" if y.size(1)>2 else "multi:softmax"]),   # Fixed value
+        "num_class": trial.suggest_categorical("num_class", [max(y.size(1), 2)]),
         #hyperparms
         "alpha": trial.suggest_float("alpha", 0.00001, 0.01, log=True),
         "lambda": trial.suggest_float("lambda", 1e-3, 100.0, log=True),

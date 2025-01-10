@@ -60,9 +60,14 @@ class XGBoostClassifierWrapper(FittableModule):
     def fit(self, X: Tensor, y: Tensor) -> Tuple[Tensor, Tensor]:
         X_np = X.detach().cpu().numpy()
         if y.dim() == 2:
-            y_np = torch.argmax(y, dim=1).detach().cpu().squeeze().numpy()
+            if y.size(1) > 2:  # Multiclass
+                self.model.n_classes_ = y.size(1)
+                self.model.set_params(num_class=y.size(1))
+                y_np = torch.argmax(y, dim=1).detach().cpu().numpy()
+            else:  # Binary
+                y_np = y[:, 0].detach().cpu().numpy()
         else:
-            y_np = y.detach().cpu().squeeze().numpy()
+            y_np = y.detach().cpu().numpy()
         self.model.fit(X_np, y_np)
         return self
 
@@ -70,8 +75,21 @@ class XGBoostClassifierWrapper(FittableModule):
     def forward(self, X: Tensor) -> Tensor:
         X_np = X.detach().cpu().numpy()
         y_pred_np = self.model.predict_proba(X_np)
-        return torch.tensor(y_pred_np, dtype=X.dtype, device=X.device)
-    
+        
+        # Convert probabilities to logits using the inverse of sigmoid/softmax
+        eps = 1e-6
+        if y_pred_np.shape[1] == 2:
+            # Binary case: use inverse sigmoid (logit)
+            proba = np.clip(y_pred_np[:, 1], eps, 1 - eps)  # Clip probabilities away from 0 and 1
+            logits = np.log(proba / (1 - proba))
+            logits = logits[:, None]  # add dimension to match shape [N, 1]
+        else:
+            # Multiclass case: use inverse softmax (log)
+            proba = np.clip(y_pred_np, eps, 1.0)  # Clip probabilities away from 0
+            logits = np.log(proba)
+            
+        return torch.tensor(logits, dtype=X.dtype, device=X.device)
+            
 
 
 

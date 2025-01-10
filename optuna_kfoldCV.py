@@ -301,15 +301,24 @@ def evaluate_pytorch_model_single_fold(
 
     #evaluate
     if regression_or_classification == "classification":
-        preds_train = torch.argmax(preds_train, dim=1)
-        gt_train = torch.argmax(y_train, dim=1)
-        acc_train = (preds_train == gt_train).float().mean()
-        score_train = -acc_train
+        if y_train.shape[1] > 2:  # Multiclass classification
+            preds_train = torch.argmax(preds_train, dim=1)
+            gt_train = torch.argmax(y_train, dim=1)
+            acc_train = (preds_train == gt_train).float().mean()
+            score_train = -acc_train
 
-        preds_test = torch.argmax(preds_test, dim=1)
-        gt_test = torch.argmax(y_test, dim=1)
-        acc_test = (preds_test == gt_test).float().mean()
-        score_test = -acc_test
+            preds_test = torch.argmax(preds_test, dim=1) 
+            gt_test = torch.argmax(y_test, dim=1)
+            acc_test = (preds_test == gt_test).float().mean()
+            score_test = -acc_test
+        else:  # Binary classification
+            preds_train = torch.sigmoid(preds_train).round()
+            acc_train = (preds_train == y_train).float().mean()
+            score_train = -acc_train
+
+            preds_test = torch.sigmoid(preds_test).round()
+            acc_test = (preds_test == y_test).float().mean() 
+            score_test = -acc_test
     else:
         preds_train = model(X_train)
         score_train = torch.sqrt(nn.functional.mse_loss(y_train, preds_train))
