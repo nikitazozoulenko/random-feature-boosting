@@ -220,26 +220,26 @@ def get_pytorch_optuna_cv_objective(
             model.fit(X_inner_train, y_inner_train)
 
             preds = model(X_inner_valid)
-            if regression_or_classification == "classification":
-                if y_inner_valid.shape[1] > 2:  # Multiclass classification
-                    loss = nn.CrossEntropyLoss()
-                    y_inner_valid_labels = torch.argmax(y_inner_valid, dim=1)
-                    ce_loss = loss(preds, y_inner_valid_labels)
-                    scores.append(ce_loss.item())
-                else:  # Binary classification
-                    loss = nn.BCEWithLogitsLoss()
-                    ce_loss = loss(preds, y_inner_valid)
-                    scores.append(ce_loss.item()) 
             # if regression_or_classification == "classification":
             #     if y_inner_valid.shape[1] > 2:  # Multiclass classification
-            #         preds = torch.argmax(preds, dim=1)
-            #         gt = torch.argmax(y_inner_valid, dim=1)
-            #         acc = (preds == gt).float().mean()
-            #         scores.append(-acc.item())  # score is being minimized in Optuna
+            #         loss = nn.CrossEntropyLoss()
+            #         y_inner_valid_labels = torch.argmax(y_inner_valid, dim=1)
+            #         ce_loss = loss(preds, y_inner_valid_labels)
+            #         scores.append(ce_loss.item())
             #     else:  # Binary classification
-            #         preds = torch.sigmoid(preds).round()
-            #         acc = (preds == y_inner_valid).float().mean()
-            #         scores.append(-acc.item())  # score is being minimized in Optuna
+            #         loss = nn.BCEWithLogitsLoss()
+            #         ce_loss = loss(preds, y_inner_valid)
+            #         scores.append(ce_loss.item()) 
+            if regression_or_classification == "classification":
+                if y_inner_valid.shape[1] > 2:  # Multiclass classification
+                    preds = torch.argmax(preds, dim=1)
+                    gt = torch.argmax(y_inner_valid, dim=1)
+                    acc = (preds == gt).float().mean()
+                    scores.append(-acc.item())  # score is being minimized in Optuna
+                else:  # Binary classification
+                    preds = torch.sigmoid(preds).round()
+                    acc = (preds == y_inner_valid).float().mean()
+                    scores.append(-acc.item())  # score is being minimized in Optuna
             else:
                 rmse = torch.sqrt(nn.functional.mse_loss(y_inner_valid, preds))
                 scores.append(rmse.item())

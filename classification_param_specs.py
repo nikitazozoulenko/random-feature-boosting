@@ -51,7 +51,9 @@ def get_GradientRFRBoost_eval_fun(
             "do_linesearch": trial.suggest_categorical("do_linesearch", [do_linesearch]),
             # Hyperparameters
             "n_layers": trial.suggest_int("n_layers", 1, 5, log=True),
-            "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
+            "hidden_dim": (trial.suggest_int("hidden_dim", 16, 512, log=True)
+                           if upscale_type=="identity" 
+                           else trial.suggest_categorical("hidden_dim", [X.size(1)])),
             "l2_cls": trial.suggest_float("l2_cls", 1e-7, 0.1, log=True),
             "l2_ghat": trial.suggest_float("l2_ghat", 1e-7, 10, log=True),
             "boost_lr": trial.suggest_float("boost_lr", 0.1, 1, log=True),
