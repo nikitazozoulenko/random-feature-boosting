@@ -1,31 +1,30 @@
 {
     "41021": {
-        "GreedyRFRBoostDense": {
+        "GradientRFRBoost_upscaleiid": {
             "score_train": [
-                0.2857755422592163,
-                0.29695117473602295
+                0.2425505816936493,
+                0.25434449315071106
             ],
             "score_test": [
-                0.3153682351112366,
-                0.30894994735717773
+                0.3282206058502197,
+                0.2887476980686188
             ],
             "t_fit": [
-                0.07851339199987706,
-                0.06529170000067097
+                0.02896575200065854,
+                0.025862728001811774
             ],
             "t_inference": [
-                0.006153353999252431,
-                0.003632091000326909
+                0.0044752829999197274,
+                0.005467435999889858
             ],
             "hyperparams": [
                 {
                     "in_dim": 72,
                     "out_dim": 1,
                     "feature_type": "SWIM",
-                    "upscale_type": "SWIM",
+                    "upscale_type": "iid",
                     "randfeat_xt_dim": 512,
                     "randfeat_x0_dim": 512,
-                    "sandwich_solver": "dense",
                     "activation": "tanh",
                     "use_batchnorm": true,
                     "n_layers": 1,
@@ -39,10 +38,9 @@
                     "in_dim": 72,
                     "out_dim": 1,
                     "feature_type": "SWIM",
-                    "upscale_type": "SWIM",
+                    "upscale_type": "iid",
                     "randfeat_xt_dim": 512,
                     "randfeat_x0_dim": 512,
-                    "sandwich_solver": "dense",
                     "activation": "tanh",
                     "use_batchnorm": true,
                     "n_layers": 1,
