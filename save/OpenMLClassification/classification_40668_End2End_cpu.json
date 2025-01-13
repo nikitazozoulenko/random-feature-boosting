@@ -1,0 +1,101 @@
+{
+    "40668": {
+        "End2End_cpu": {
+            "score_train": [
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0
+            ],
+            "score_test": [
+                -0.7990000247955322,
+                -0.7749999761581421,
+                -0.7549999952316284,
+                -0.7940000295639038,
+                -0.7839999794960022
+            ],
+            "t_fit": [
+                32.56267901137471,
+                4.153976267203689,
+                11.408781416714191,
+                30.2781584225595,
+                4.374904479831457
+            ],
+            "t_inference": [
+                0.4271086882799864,
+                0.04286210425198078,
+                0.10818629525601864,
+                0.45952683314681053,
+                0.06651007570326328
+            ],
+            "hyperparams": [
+                {
+                    "in_dim": 126,
+                    "out_dim": 3,
+                    "loss": "cce",
+                    "bottleneck_dim": 512,
+                    "n_blocks": 4,
+                    "hidden_dim": 507,
+                    "lr": 0.0010088592100720253,
+                    "end_lr_factor": 0.3849001810880893,
+                    "n_epochs": 25,
+                    "weight_decay": 7.415576435224905e-05,
+                    "batch_size": 128
+                },
+                {
+                    "in_dim": 126,
+                    "out_dim": 3,
+                    "loss": "cce",
+                    "bottleneck_dim": 512,
+                    "n_blocks": 1,
+                    "hidden_dim": 154,
+                    "lr": 0.0064369540107017155,
+                    "end_lr_factor": 0.06647475546520494,
+                    "n_epochs": 20,
+                    "weight_decay": 3.2419307169704924e-05,
+                    "batch_size": 128
+                },
+                {
+                    "in_dim": 126,
+                    "out_dim": 3,
+                    "loss": "cce",
+                    "bottleneck_dim": 512,
+                    "n_blocks": 1,
+                    "hidden_dim": 512,
+                    "lr": 0.004820739051726484,
+                    "end_lr_factor": 0.0684517839103024,
+                    "n_epochs": 27,
+                    "weight_decay": 4.6173242061572406e-05,
+                    "batch_size": 128
+                },
+                {
+                    "in_dim": 126,
+                    "out_dim": 3,
+                    "loss": "cce",
+                    "bottleneck_dim": 512,
+                    "n_blocks": 5,
+                    "hidden_dim": 449,
+                    "lr": 0.009505245282390452,
+                    "end_lr_factor": 0.04972977219070644,
+                    "n_epochs": 21,
+                    "weight_decay": 1.930115426065688e-05,
+                    "batch_size": 128
+                },
+                {
+                    "in_dim": 126,
+                    "out_dim": 3,
+                    "loss": "cce",
+                    "bottleneck_dim": 512,
+                    "n_blocks": 1,
+                    "hidden_dim": 324,
+                    "lr": 0.005909388529609003,
+                    "end_lr_factor": 0.09320954748570605,
+                    "n_epochs": 15,
+                    "weight_decay": 8.950258269396821e-06,
+                    "batch_size": 128
+                }
+            ]
+        }
+    }
+}
