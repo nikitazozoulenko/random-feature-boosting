@@ -381,9 +381,9 @@ if __name__ == "__main__":
         elif "XGBoost" in model_name:
             eval_fun = evaluate_XGBoostRegressor
         #RFNN
-        elif "RFNN" in model_name:
+        elif model_name=="RFNN":
             eval_fun = get_RandomFeatureNetwork_eval_fun("SWIM", "tanh")
-        elif "RFNN_iid" in model_name:
+        elif model_name=="RFNN_iid":
             eval_fun = get_RandomFeatureNetwork_eval_fun("iid", "tanh")
         #RFNN
         elif "RFRBoost" in model_name:
