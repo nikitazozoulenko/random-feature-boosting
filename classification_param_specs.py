@@ -50,12 +50,12 @@ def get_GradientRFRBoost_eval_fun(
             "use_batchnorm": trial.suggest_categorical("use_batchnorm", [use_batchnorm]),
             "do_linesearch": trial.suggest_categorical("do_linesearch", [do_linesearch]),
             # Hyperparameters
-            "n_layers": trial.suggest_int("n_layers", 1, 5, log=True),
+            "n_layers": trial.suggest_int("n_layers", 1, 10, log=True),
             "hidden_dim": (trial.suggest_int("hidden_dim", 16, 512, log=True)
-                           if upscale_type=="identity" 
+                           if upscale_type!="identity" 
                            else trial.suggest_categorical("hidden_dim", [X.size(1)])),
-            "l2_cls": trial.suggest_float("l2_cls", 1e-7, 0.1, log=True),
-            "l2_ghat": trial.suggest_float("l2_ghat", 1e-7, 10, log=True),
+            "l2_cls": trial.suggest_float("l2_cls", 1e-5, 10, log=True),
+            "l2_ghat": trial.suggest_float("l2_ghat", 1e-5, 10, log=True),
             "boost_lr": trial.suggest_float("boost_lr", 0.1, 1, log=True),
             "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
                 (trial.suggest_float("SWIM_scale", 0.25, 2.0) if feature_type == "SWIM"
@@ -103,7 +103,7 @@ def get_RandomFeatureNetwork_eval_fun(
                (trial.suggest_float("SWIM_scale", 0.25, 2.0) if feature_type == "SWIM" 
                 else trial.suggest_float("iid_scale", 0.1, 10, log=True))
             ),
-            "l2_cls": trial.suggest_float("l2_cls", 1e-7, 0.1, log=True),
+            "l2_cls": trial.suggest_float("l2_cls", 1e-5, 10, log=True),
         }
 
 
@@ -128,7 +128,7 @@ def evaluate_LogisticRegression(
     ModelClass = LogisticRegression
     get_optuna_params = lambda trial : {
         "n_classes": trial.suggest_categorical("n_classes", [max(y.size(1), 2)]),
-        "l2_lambda": trial.suggest_float("l2_lambda", 1e-7, 0.1, log=True),
+        "l2_lambda": trial.suggest_float("l2_lambda", 1e-5, 10, log=True),
     }
 
     return evaluate_pytorch_model_kfoldcv(
@@ -189,7 +189,7 @@ def evaluate_End2End(
         "loss": trial.suggest_categorical("loss", ["bce" if out_dim == 1 else "cce"]),
         "bottleneck_dim": trial.suggest_categorical("bottleneck_dim", [512]),
         # Hyperparameters
-        "n_blocks": trial.suggest_int("n_blocks", 1, 5),
+        "n_blocks": trial.suggest_int("n_blocks", 1, 10),
         "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
         "lr": trial.suggest_float("lr", 1e-7, 1e-2, log=True),
         "end_lr_factor": trial.suggest_float("end_lr_factor", 0.01, 1.0, log=True),
