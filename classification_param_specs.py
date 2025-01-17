@@ -54,11 +54,11 @@ def get_GradientRFRBoost_eval_fun(
             "hidden_dim": (trial.suggest_int("hidden_dim", 16, 512, log=True)
                            if upscale_type!="identity" 
                            else trial.suggest_categorical("hidden_dim", [X.size(1)])),
-            "l2_cls": trial.suggest_float("l2_cls", 1e-5, 10, log=True),
-            "l2_ghat": trial.suggest_float("l2_ghat", 1e-5, 10, log=True),
+            "l2_cls": trial.suggest_float("l2_cls", 1e-6, 1, log=True),
+            "l2_ghat": trial.suggest_float("l2_ghat", 1e-6, 1, log=True),
             "boost_lr": trial.suggest_float("boost_lr", 0.1, 1, log=True),
             "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
-                (trial.suggest_float("SWIM_scale", 0.15, 1.5) if feature_type == "SWIM"
+                (trial.suggest_float("SWIM_scale", 0.25, 2.0) if feature_type == "SWIM"
                 else trial.suggest_float("iid_scale", 0.1, 10, log=True))
             ),
         }
@@ -100,10 +100,10 @@ def get_RandomFeatureNetwork_eval_fun(
             # Hyperparameters
             "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
             "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
-               (trial.suggest_float("SWIM_scale", 0.15, 1.5) if feature_type == "SWIM" 
+               (trial.suggest_float("SWIM_scale", 0.25, 2.0) if feature_type == "SWIM" 
                 else trial.suggest_float("iid_scale", 0.1, 10, log=True))
             ),
-            "l2_cls": trial.suggest_float("l2_cls", 1e-5, 10, log=True),
+            "l2_cls": trial.suggest_float("l2_cls", 1e-6, 1, log=True),
         }
 
 
@@ -128,7 +128,7 @@ def evaluate_LogisticRegression(
     ModelClass = LogisticRegression
     get_optuna_params = lambda trial : {
         "n_classes": trial.suggest_categorical("n_classes", [max(y.size(1), 2)]),
-        "l2_lambda": trial.suggest_float("l2_lambda", 1e-5, 10, log=True),
+        "l2_lambda": trial.suggest_float("l2_lambda", 1e-6, 100, log=True),
     }
 
     return evaluate_pytorch_model_kfoldcv(
