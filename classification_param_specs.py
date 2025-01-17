@@ -58,7 +58,7 @@ def get_GradientRFRBoost_eval_fun(
             "l2_ghat": trial.suggest_float("l2_ghat", 1e-5, 10, log=True),
             "boost_lr": trial.suggest_float("boost_lr", 0.1, 1, log=True),
             "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
-                (trial.suggest_float("SWIM_scale", 0.25, 2.0) if feature_type == "SWIM"
+                (trial.suggest_float("SWIM_scale", 0.15, 1.5) if feature_type == "SWIM"
                 else trial.suggest_float("iid_scale", 0.1, 10, log=True))
             ),
         }
@@ -100,7 +100,7 @@ def get_RandomFeatureNetwork_eval_fun(
             # Hyperparameters
             "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
             "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
-               (trial.suggest_float("SWIM_scale", 0.25, 2.0) if feature_type == "SWIM" 
+               (trial.suggest_float("SWIM_scale", 0.15, 1.5) if feature_type == "SWIM" 
                 else trial.suggest_float("iid_scale", 0.1, 10, log=True))
             ),
             "l2_cls": trial.suggest_float("l2_cls", 1e-5, 10, log=True),

@@ -1,0 +1,121 @@
+{
+    "44979": {
+        "GreedyRFRBoostDense_upscaleiid_batchnormFalse": {
+            "score_train": [
+                0.10782156884670258,
+                0.1080264076590538,
+                0.1199621707201004,
+                0.12192290276288986,
+                0.10574128478765488
+            ],
+            "score_test": [
+                0.16242928802967072,
+                0.15049190819263458,
+                0.14344099164009094,
+                0.13371188938617706,
+                0.1360970288515091
+            ],
+            "t_fit": [
+                6.1403529942035675,
+                6.133002549409866,
+                4.358513802289963,
+                6.239845708012581,
+                5.939708977937698
+            ],
+            "t_inference": [
+                0.5635563731193542,
+                0.9092292189598083,
+                0.5499335378408432,
+                1.431865632534027,
+                0.7333990633487701
+            ],
+            "hyperparams": [
+                {
+                    "in_dim": 26,
+                    "out_dim": 1,
+                    "feature_type": "SWIM",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "activation": "tanh",
+                    "use_batchnorm": false,
+                    "n_layers": 9,
+                    "l2_reg": 9.967727808400298,
+                    "l2_ghat": 2.612871965493701e-06,
+                    "boost_lr": 0.9965494149351608,
+                    "hidden_dim": 16,
+                    "SWIM_scale": 1.0730320465346415
+                },
+                {
+                    "in_dim": 26,
+                    "out_dim": 1,
+                    "feature_type": "SWIM",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "activation": "tanh",
+                    "use_batchnorm": false,
+                    "n_layers": 9,
+                    "l2_reg": 0.12836227077275034,
+                    "l2_ghat": 0.0012548338528187116,
+                    "boost_lr": 0.9459979732184669,
+                    "hidden_dim": 94,
+                    "SWIM_scale": 1.861213283386126
+                },
+                {
+                    "in_dim": 26,
+                    "out_dim": 1,
+                    "feature_type": "SWIM",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "activation": "tanh",
+                    "use_batchnorm": false,
+                    "n_layers": 10,
+                    "l2_reg": 0.06255999247454407,
+                    "l2_ghat": 0.003983384812995413,
+                    "boost_lr": 0.8591536671101581,
+                    "hidden_dim": 62,
+                    "SWIM_scale": 1.568254131531425
+                },
+                {
+                    "in_dim": 26,
+                    "out_dim": 1,
+                    "feature_type": "SWIM",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "activation": "tanh",
+                    "use_batchnorm": false,
+                    "n_layers": 8,
+                    "l2_reg": 0.277845883208187,
+                    "l2_ghat": 0.0007449850771389311,
+                    "boost_lr": 0.8116765640712443,
+                    "hidden_dim": 343,
+                    "SWIM_scale": 1.592748895937995
+                },
+                {
+                    "in_dim": 26,
+                    "out_dim": 1,
+                    "feature_type": "SWIM",
+                    "upscale_type": "iid",
+                    "randfeat_xt_dim": 512,
+                    "randfeat_x0_dim": 512,
+                    "sandwich_solver": "dense",
+                    "activation": "tanh",
+                    "use_batchnorm": false,
+                    "n_layers": 10,
+                    "l2_reg": 0.09028978256029029,
+                    "l2_ghat": 0.0009224530896776077,
+                    "boost_lr": 0.8496874020080298,
+                    "hidden_dim": 95,
+                    "SWIM_scale": 1.6781238279625272
+                }
+            ]
+        }
+    }
+}
