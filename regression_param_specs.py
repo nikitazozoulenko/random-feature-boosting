@@ -49,8 +49,8 @@ def get_GradientRFRBoost_eval_fun(
             "use_batchnorm": trial.suggest_categorical("use_batchnorm", [use_batchnorm]),
             # Hyperparameters
             "n_layers": trial.suggest_int("n_layers", 1, 10, log=True),
-            "l2_reg": trial.suggest_float("l2_reg", 1e-6, 1, log=True),
-            "l2_ghat": trial.suggest_float("l2_ghat", 1e-6, 1, log=True),
+            "l2_reg": trial.suggest_float("l2_reg", 1e-5, 10, log=True),
+            "l2_ghat": trial.suggest_float("l2_ghat", 1e-5, 10, log=True),
             "boost_lr": trial.suggest_float("boost_lr", 0.1, 1.0, log=True),
             "hidden_dim": (
                 trial.suggest_int("hidden_dim", 16, 512, log=True) if upscale_type != "identity"
@@ -104,8 +104,8 @@ def get_GreedyRFRBoost_eval_fun(
             "use_batchnorm": trial.suggest_categorical("use_batchnorm", [use_batchnorm]),
             # Hyperparameters
             "n_layers": trial.suggest_int("n_layers", 1, 10, log=True),
-            "l2_reg": trial.suggest_float("l2_reg", 1e-6, 1, log=True),
-            "l2_ghat": trial.suggest_float("l2_ghat", 1e-6, 1, log=True),
+            "l2_reg": trial.suggest_float("l2_reg", 1e-5, 10, log=True),
+            "l2_ghat": trial.suggest_float("l2_ghat", 1e-5, 10, log=True),
             "boost_lr": trial.suggest_float("boost_lr", 0.1, 1.0, log=True),
             "hidden_dim": (
                 trial.suggest_int("hidden_dim", 16, 512, log=True) if upscale_type != "identity"
@@ -152,7 +152,7 @@ def get_RandomFeatureNetwork_eval_fun(
             "activation": trial.suggest_categorical("activation", [activation]),
             "use_batchnorm": trial.suggest_categorical("use_batchnorm", [False]),
             # Hyperparameters
-            "l2_reg": trial.suggest_float("l2_reg", 1e-6, 1, log=True),
+            "l2_reg": trial.suggest_float("l2_reg", 1e-5, 10, log=True),
             "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
             "SWIM_scale" if feature_type == "SWIM" else "iid_scale" : (
                 (trial.suggest_float("SWIM_scale", 0.25, 2.0) if feature_type == "SWIM"
@@ -181,7 +181,7 @@ def evaluate_Ridge(
         ):
     ModelClass = RidgeModule
     get_optuna_params = lambda trial : {
-        "l2_reg": trial.suggest_float("l2_reg", 1e-6, 1, log=True),
+        "l2_reg": trial.suggest_float("l2_reg", 1e-5, 10, log=True),
     }
 
     return evaluate_pytorch_model_kfoldcv(
