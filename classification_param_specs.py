@@ -191,7 +191,7 @@ def evaluate_End2End(
         # Hyperparameters
         "n_blocks": trial.suggest_int("n_blocks", 1, 10),
         "hidden_dim": trial.suggest_int("hidden_dim", 16, 512, log=True),
-        "lr": trial.suggest_float("lr", 1e-7, 1e-2, log=True),
+        "lr": trial.suggest_float("lr", 1e-6, 1e-1, log=True),
         "end_lr_factor": trial.suggest_float("end_lr_factor", 0.01, 1.0, log=True),
         "n_epochs": trial.suggest_int("n_epochs", 10, 50, log=True),
         "weight_decay": trial.suggest_float("weight_decay", 1e-6, 0.001, log=True),
